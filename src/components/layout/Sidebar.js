@@ -2,28 +2,30 @@ import Link from "next/link";
 
 export default function Sidebar({ items, currentPath }) {
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:gap-4 md:border-r md:border-zinc-200 md:bg-white md:px-4 md:py-5">
-      <div className="px-2">
-        <div className="text-sm font-semibold tracking-tight text-zinc-900">
+    <aside className="hidden md:flex md:w-72 md:flex-col md:gap-5 md:border-r md:border-app-border md:bg-app-surface md:px-5 md:py-7 md:shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.02)]">
+      <div className="px-1">
+        <div className="text-sm font-semibold tracking-tight text-foreground">
           Matrículas U.
         </div>
-        <div className="text-xs text-zinc-500">
+        <div className="mt-0.5 text-xs text-app-muted">
           Universidad Privada (Caribe)
         </div>
       </div>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-1.5">
         {items.map((item) => {
-          const active = currentPath === item.href;
+          const active =
+            currentPath === item.href ||
+            (item.href !== "/dashboard" && currentPath?.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
               className={[
-                "rounded-xl px-3 py-2 text-sm transition-colors",
+                "rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-app-accent/30",
                 active
-                  ? "bg-zinc-900 text-white"
-                  : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900",
+                  ? "bg-app-accent text-white shadow-sm"
+                  : "text-foreground/90 hover:bg-app-bg hover:text-foreground",
               ].join(" ")}
             >
               {item.label}

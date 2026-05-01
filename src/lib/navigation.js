@@ -73,6 +73,71 @@ export function allowedNavItemsForRole(role) {
   return NAV_ITEMS.filter((item) => item.roles.includes(role));
 }
 
+/** Texto y CTA para las tarjetas del dashboard (misma lista de rutas que el menú). */
+export const DASHBOARD_CARD_BY_HREF = {
+  "/programas": {
+    description:
+      "Gestiona programas académicos, modalidades y su configuración general.",
+    cta: "Ir a Programas",
+  },
+  "/planes": {
+    description:
+      "Administra planes de estudio y su relación con periodos y programas.",
+    cta: "Ir a Planes",
+  },
+  "/estudiantes": {
+    description: "Listado, creación y edición de estudiantes.",
+    cta: "Ir a Estudiantes",
+  },
+  "/codigos-detalle": {
+    description: "Mantén los códigos de detalle para cobros y pagos.",
+    cta: "Ir a Códigos",
+  },
+  "/reglas-cobro": {
+    description: "Define reglas por periodo, programa y modalidad.",
+    cta: "Ir a Reglas",
+  },
+  "/cobros": {
+    description: "Genera cobros individuales o masivos según las reglas.",
+    cta: "Ir a Cobros",
+  },
+  "/cuenta-corriente": {
+    description: "Consulta movimientos y balance por estudiante.",
+    cta: "Ver cuenta corriente",
+  },
+  "/pagos": {
+    description: "Simula pago en línea o registro por caja.",
+    cta: "Ir a Pagos",
+  },
+  "/volante": {
+    description: "Visualiza y descarga el volante de matrícula en PDF.",
+    cta: "Ir al volante",
+  },
+  "/reportes": {
+    description: "Listados, ingresos esperados, cartera y pendientes.",
+    cta: "Ir a Reportes",
+  },
+  "/admin/seguridad": {
+    description: "Usuarios, roles y menús (solo administración).",
+    cta: "Ir a Seguridad",
+  },
+};
+
+/** Ítems de menú permitidos para el rol, excluyendo el propio Dashboard (para las cards). */
+export function dashboardNavItemsForRole(role) {
+  if (!role) return [];
+  return allowedNavItemsForRole(role).filter((item) => item.href !== "/dashboard");
+}
+
+export function dashboardCardMetaForHref(href) {
+  return (
+    DASHBOARD_CARD_BY_HREF[href] ?? {
+      description: "Abre este módulo desde el menú lateral.",
+      cta: "Abrir",
+    }
+  );
+}
+
 export function isPathAllowedForRole(pathname, role) {
   const item = NAV_ITEMS.find((x) => x.href === pathname);
   if (!item) return true;
