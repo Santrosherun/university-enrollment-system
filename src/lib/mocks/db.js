@@ -571,5 +571,48 @@ export const MockDb = {
 
     return clone(record);
   },
+
+  getReportesFinancieros(periodo = "") {
+    const cobros = periodo 
+      ? state.cobros.filter(c => c.periodo === periodo && c.estado !== "ANULADO")
+      : state.cobros.filter(c => c.estado !== "ANULADO");
+    
+    const recaudos = periodo
+      ? state.recaudos.filter(r => {
+          if (!r.cobroId) return false; // Por simplicidad, solo recaudos con cobroId
+          const c = state.cobros.find(cb => cb.id === r.cobroId);
+          return c && c.periodo === periodo;
+        })
+      : state.recaudos;
+
+    const totalFacturado = cobros.reduce((acc, c) => acc + c.total, 0);
+    const totalRecaudado = recaudos.reduce((acc, r) => acc + r.valor, 0);
+    const carteraPendiente = totalFacturado - totalRecaudado;
+
+    // Reporte por Programa
+    const porPrograma = state.programas.map(prog => {
+      const cobrosProg = cobros.filter(c => {
+        const est = state.estudiantes.find(e => e.id === c.estudianteId);
+        return est && est.programaId === prog.id;
+      });
+      const facturado = cobrosProg.reduce((acc, c) => acc + c.total, 0);
+      
+      return {
+        id: prog.id,
+        nombre: prog.nombre,
+        facturado
+      };
+    }).sort((a, b) => b.facturado - a.facturado);
+
+    return {
+      summary: {
+        totalFacturado,
+        totalRecaudado,
+        carteraPendiente,
+        efectividad: totalFacturado > 0 ? (totalRecaudado / totalFacturado) * 100 : 0
+      },
+      porPrograma
+    };
+  }
 };
 
