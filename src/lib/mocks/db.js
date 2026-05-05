@@ -120,6 +120,21 @@ const defaultState = {
       updatedAt: new Date().toISOString(),
     },
   ],
+  cobros: [
+    {
+      id: "cb_001",
+      estudianteId: "est_001",
+      periodo: "2024-1",
+      items: [
+        { codigoDetalleId: "cd_001", valor: 4500000 },
+        { codigoDetalleId: "cd_002", valor: 85000 },
+      ],
+      total: 4585000,
+      estado: "PENDIENTE",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ],
 };
 
 const state = globalThis.__uesMockDb ?? defaultState;
@@ -132,6 +147,7 @@ for (const key in defaultState) {
 }
 
 globalThis.__uesMockDb = state;
+
 
 
 export const MockDb = {
@@ -385,6 +401,87 @@ export const MockDb = {
     const idx = state.estudiantes.findIndex((e) => e.id === id);
     if (idx === -1) return false;
     state.estudiantes.splice(idx, 1);
+    return true;
+  },
+
+  listCobros({ estudianteId, periodo, estado } = {}) {
+    let list = state.cobros;
+    if (estudianteId) list = list.filter((c) => c.estudianteId === estudianteId);
+    if (periodo) list = list.filter((c) => c.periodo === periodo);
+    if (estado) list = list.filter((c) => c.estado === estado);
+    return clone(list);
+  },
+  getCobro(id) {
+    return clone(state.cobros.find((c) => c.id === id) ?? null);
+  },
+  /** Genera un cobro para un estudiante basado en las reglas del periodo. */
+  generateCobro(estudianteId, periodo) {
+    const estudiante = state.estudiantes.find((e) => e.id === estudianteId);
+    if (!estudiante) throw new Error("Estudiante no encontrado.");
+
+    // Buscar reglas para el programa del estudiante y el periodo
+    const reglas = state.reglasCobro.filter(
+      (r) => r.programaId === estudiante.programaId && r.periodo === periodo && r.activo,
+    );
+
+    if (reglas.length === 0) {
+      throw new Error(`No hay reglas de cobro configuradas para el programa ${estudiante.programaId} en el periodo ${periodo}.`);
+    }
+
+    // Verificar si ya existe un cobro pendiente o pagado para este periodo
+    const existe = state.cobros.find(
+      (c) => c.estudianteId === estudianteId && c.periodo === periodo && c.estado !== "ANULADO",
+    );
+    if (existe) {
+      throw new Error(`El estudiante ya tiene un cobro generado para el periodo ${periodo}.`);
+    }
+
+    const now = new Date().toISOString();
+    const items = reglas.map((r) => ({
+      codigoDetalleId: r.codigoDetalleId,
+      valor: r.valor,
+    }));
+    const total = items.reduce((acc, curr) => acc + curr.valor, 0);
+
+    const record = {
+      id: makeId("cb"),
+      estudianteId,
+      periodo,
+      items,
+      total,
+      estado: "PENDIENTE",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    state.cobros.unshift(record);
+    return clone(record);
+  },
+  /** Generación masiva por programa y periodo. */
+  generateCobrosMasivos(programaId, periodo) {
+    const estudiantes = state.estudiantes.filter(
+      (e) => e.programaId === programaId && e.activo,
+    );
+    let count = 0;
+    const errors = [];
+
+    estudiantes.forEach((e) => {
+      try {
+        this.generateCobro(e.id, periodo);
+        count++;
+      } catch (err) {
+        errors.push({ estudiante: e.nombreCompleto, error: err.message });
+      }
+    });
+
+    return { count, errors };
+  },
+  deleteCobro(id) {
+    const idx = state.cobros.findIndex((c) => c.id === id);
+    if (idx === -1) return false;
+    // En un sistema real, no se borran cobros, se anulan.
+    // Para el mock, permitimos borrar.
+    state.cobros.splice(idx, 1);
     return true;
   },
 };
