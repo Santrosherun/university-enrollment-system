@@ -70,6 +70,28 @@ const state = globalThis.__uesMockDb ?? {
       updatedAt: new Date().toISOString(),
     },
   ],
+  reglasCobro: [
+    {
+      id: "rc_001",
+      periodo: "2024-1",
+      programaId: "prog_001",
+      codigoDetalleId: "cd_001",
+      valor: 4500000,
+      activo: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "rc_002",
+      periodo: "2024-1",
+      programaId: "prog_001",
+      codigoDetalleId: "cd_002",
+      valor: 85000,
+      activo: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ],
 };
 
 globalThis.__uesMockDb = state;
@@ -219,6 +241,59 @@ export const MockDb = {
     const idx = state.codigosDetalle.findIndex((c) => c.id === id);
     if (idx === -1) return false;
     state.codigosDetalle.splice(idx, 1);
+    return true;
+  },
+
+  listReglasCobro({ periodo, programaId, codigoDetalleId } = {}) {
+    let list = state.reglasCobro;
+    if (periodo) list = list.filter((r) => r.periodo === periodo);
+    if (programaId) list = list.filter((r) => r.programaId === programaId);
+    if (codigoDetalleId) list = list.filter((r) => r.codigoDetalleId === codigoDetalleId);
+    return clone(list);
+  },
+  getReglaCobro(id) {
+    return clone(state.reglasCobro.find((r) => r.id === id) ?? null);
+  },
+  createReglaCobro(input) {
+    const now = new Date().toISOString();
+    const record = {
+      id: makeId("rc"),
+      periodo: String(input.periodo ?? "").trim(),
+      programaId: String(input.programaId ?? "").trim(),
+      codigoDetalleId: String(input.codigoDetalleId ?? "").trim(),
+      valor: Number(input.valor ?? 0),
+      activo: Boolean(input.activo ?? true),
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.reglasCobro.unshift(record);
+    return clone(record);
+  },
+  updateReglaCobro(id, patch) {
+    const idx = state.reglasCobro.findIndex((r) => r.id === id);
+    if (idx === -1) return null;
+    const now = new Date().toISOString();
+    const prev = state.reglasCobro[idx];
+    const next = {
+      ...prev,
+      periodo: patch.periodo !== undefined ? String(patch.periodo).trim() : prev.periodo,
+      programaId:
+        patch.programaId !== undefined ? String(patch.programaId).trim() : prev.programaId,
+      codigoDetalleId:
+        patch.codigoDetalleId !== undefined
+          ? String(patch.codigoDetalleId).trim()
+          : prev.codigoDetalleId,
+      valor: patch.valor !== undefined ? Number(patch.valor) : prev.valor,
+      activo: patch.activo !== undefined ? Boolean(patch.activo) : prev.activo,
+      updatedAt: now,
+    };
+    state.reglasCobro[idx] = next;
+    return clone(next);
+  },
+  deleteReglaCobro(id) {
+    const idx = state.reglasCobro.findIndex((r) => r.id === id);
+    if (idx === -1) return false;
+    state.reglasCobro.splice(idx, 1);
     return true;
   },
 };
