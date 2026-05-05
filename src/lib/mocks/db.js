@@ -544,5 +544,32 @@ export const MockDb = {
       },
     };
   },
+
+  createRecaudo(input) {
+    const now = new Date().toISOString();
+    const record = {
+      id: makeId("rec"),
+      estudianteId: String(input.estudianteId ?? "").trim(),
+      cobroId: input.cobroId ? String(input.cobroId).trim() : null,
+      valor: Number(input.valor ?? 0),
+      fecha: input.fecha || now,
+      metodo: String(input.metodo ?? "EFECTIVO").trim().toUpperCase(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    state.recaudos.unshift(record);
+
+    // Si el pago está asociado a un cobro, marcar el cobro como PAGADO
+    if (record.cobroId) {
+      const cobroIdx = state.cobros.findIndex((c) => c.id === record.cobroId);
+      if (cobroIdx !== -1) {
+        state.cobros[cobroIdx].estado = "PAGADO";
+        state.cobros[cobroIdx].updatedAt = now;
+      }
+    }
+
+    return clone(record);
+  },
 };
 
