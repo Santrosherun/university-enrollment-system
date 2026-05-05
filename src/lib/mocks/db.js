@@ -135,6 +135,18 @@ const defaultState = {
       updatedAt: new Date().toISOString(),
     },
   ],
+  recaudos: [
+    {
+      id: "rec_001",
+      estudianteId: "est_002",
+      cobroId: null, // Pago libre o abono a cuenta
+      valor: 500000,
+      fecha: new Date().toISOString(),
+      metodo: "TRANSFERENCIA",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ],
 };
 
 const state = globalThis.__uesMockDb ?? defaultState;
@@ -147,6 +159,7 @@ for (const key in defaultState) {
 }
 
 globalThis.__uesMockDb = state;
+
 
 
 
@@ -483,6 +496,53 @@ export const MockDb = {
     // Para el mock, permitimos borrar.
     state.cobros.splice(idx, 1);
     return true;
+  },
+
+  listRecaudos({ estudianteId } = {}) {
+    const list = estudianteId
+      ? state.recaudos.filter((r) => r.estudianteId === estudianteId)
+      : state.recaudos;
+    return clone(list);
+  },
+
+  /** Obtiene el extracto de movimientos y balance de un estudiante. */
+  getCuentaCorriente(estudianteId) {
+    const cargos = state.cobros
+      .filter((c) => c.estudianteId === estudianteId && c.estado !== "ANULADO")
+      .map((c) => ({
+        id: c.id,
+        tipo: "CARGO",
+        descripcion: `Cobro Matrícula - ${c.periodo}`,
+        valor: c.total,
+        fecha: c.createdAt,
+      }));
+
+    const abonos = state.recaudos
+      .filter((r) => r.estudianteId === estudianteId)
+      .map((r) => ({
+        id: r.id,
+        tipo: "ABONO",
+        descripcion: `Pago Recibido (${r.metodo})`,
+        valor: r.valor,
+        fecha: r.fecha,
+      }));
+
+    const movimientos = [...cargos, ...abonos].sort(
+      (a, b) => new Date(b.fecha) - new Date(a.fecha),
+    );
+
+    const totalCargos = cargos.reduce((acc, curr) => acc + curr.valor, 0);
+    const totalAbonos = abonos.reduce((acc, curr) => acc + curr.valor, 0);
+    const balance = totalCargos - totalAbonos;
+
+    return {
+      movimientos,
+      summary: {
+        totalCargos,
+        totalAbonos,
+        balance,
+      },
+    };
   },
 };
 
