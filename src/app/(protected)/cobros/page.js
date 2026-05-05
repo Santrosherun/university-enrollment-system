@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
+
 
 function Modal({ title, hint, children, onClose }) {
   return (
@@ -212,6 +214,15 @@ export default function CobrosPage() {
                     </td>
                     <td className="py-3 text-right">
                       <div className="inline-flex flex-wrap justify-end gap-2">
+                        <a 
+                          href={`/api/cobros/${item.id}/pdf`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                        >
+                          <Button variant="secondary" size="sm">
+                            Imprimir Volante (PDF)
+                          </Button>
+                        </a>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -219,6 +230,7 @@ export default function CobrosPage() {
                         >
                           Ver Detalle
                         </Button>
+
                         {item.estado === "PENDIENTE" && (
                           <Button
                             variant="danger"
@@ -230,6 +242,7 @@ export default function CobrosPage() {
                         )}
                       </div>
                     </td>
+
                   </tr>
                 ))}
                 {filtered.length === 0 ? (
