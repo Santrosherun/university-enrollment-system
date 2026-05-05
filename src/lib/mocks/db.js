@@ -8,7 +8,7 @@ function clone(value) {
 
 // NOTE: In-memory mock DB. In dev, hot-reload may reset data.
 // This is enough to build screens while backend is not ready.
-const state = globalThis.__uesMockDb ?? {
+const defaultState = {
   programas: [
     {
       id: "prog_001",
@@ -92,9 +92,47 @@ const state = globalThis.__uesMockDb ?? {
       updatedAt: new Date().toISOString(),
     },
   ],
+  estudiantes: [
+    {
+      id: "est_001",
+      tipoDocumento: "CC",
+      numeroDocumento: "1001002003",
+      nombreCompleto: "Juan Pérez García",
+      correo: "juan.perez@universidad.edu.co",
+      telefono: "3001234567",
+      programaId: "prog_001",
+      periodoIngreso: "2024-1",
+      activo: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "est_002",
+      tipoDocumento: "CC",
+      numeroDocumento: "1002003004",
+      nombreCompleto: "María López Ruíz",
+      correo: "maria.lopez@universidad.edu.co",
+      telefono: "3119876543",
+      programaId: "prog_002",
+      periodoIngreso: "2024-1",
+      activo: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ],
 };
 
+const state = globalThis.__uesMockDb ?? defaultState;
+
+// Asegurar que todas las propiedades existan si vienen de una versión anterior
+for (const key in defaultState) {
+  if (state[key] === undefined) {
+    state[key] = clone(defaultState[key]);
+  }
+}
+
 globalThis.__uesMockDb = state;
+
 
 export const MockDb = {
   listProgramas() {
@@ -294,6 +332,59 @@ export const MockDb = {
     const idx = state.reglasCobro.findIndex((r) => r.id === id);
     if (idx === -1) return false;
     state.reglasCobro.splice(idx, 1);
+    return true;
+  },
+
+  listEstudiantes({ programaId } = {}) {
+    let list = state.estudiantes;
+    if (programaId) list = list.filter((e) => e.programaId === programaId);
+    return clone(list);
+  },
+  getEstudiante(id) {
+    return clone(state.estudiantes.find((e) => e.id === id) ?? null);
+  },
+  createEstudiante(input) {
+    const now = new Date().toISOString();
+    const record = {
+      id: makeId("est"),
+      tipoDocumento: String(input.tipoDocumento ?? "CC").trim().toUpperCase(),
+      numeroDocumento: String(input.numeroDocumento ?? "").trim(),
+      nombreCompleto: String(input.nombreCompleto ?? "").trim(),
+      correo: String(input.correo ?? "").trim().toLowerCase(),
+      telefono: String(input.telefono ?? "").trim(),
+      programaId: String(input.programaId ?? "").trim(),
+      periodoIngreso: String(input.periodoIngreso ?? "").trim(),
+      activo: Boolean(input.activo ?? true),
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.estudiantes.unshift(record);
+    return clone(record);
+  },
+  updateEstudiante(id, patch) {
+    const idx = state.estudiantes.findIndex((e) => e.id === id);
+    if (idx === -1) return null;
+    const now = new Date().toISOString();
+    const prev = state.estudiantes[idx];
+    const next = {
+      ...prev,
+      tipoDocumento: patch.tipoDocumento !== undefined ? String(patch.tipoDocumento).trim().toUpperCase() : prev.tipoDocumento,
+      numeroDocumento: patch.numeroDocumento !== undefined ? String(patch.numeroDocumento).trim() : prev.numeroDocumento,
+      nombreCompleto: patch.nombreCompleto !== undefined ? String(patch.nombreCompleto).trim() : prev.nombreCompleto,
+      correo: patch.correo !== undefined ? String(patch.correo).trim().toLowerCase() : prev.correo,
+      telefono: patch.telefono !== undefined ? String(patch.telefono).trim() : prev.telefono,
+      programaId: patch.programaId !== undefined ? String(patch.programaId).trim() : prev.programaId,
+      periodoIngreso: patch.periodoIngreso !== undefined ? String(patch.periodoIngreso).trim() : prev.periodoIngreso,
+      activo: patch.activo !== undefined ? Boolean(patch.activo) : prev.activo,
+      updatedAt: now,
+    };
+    state.estudiantes[idx] = next;
+    return clone(next);
+  },
+  deleteEstudiante(id) {
+    const idx = state.estudiantes.findIndex((e) => e.id === id);
+    if (idx === -1) return false;
+    state.estudiantes.splice(idx, 1);
     return true;
   },
 };
