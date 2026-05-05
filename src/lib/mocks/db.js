@@ -41,6 +41,35 @@ const state = globalThis.__uesMockDb ?? {
       updatedAt: new Date().toISOString(),
     },
   ],
+  codigosDetalle: [
+    {
+      id: "cd_001",
+      codigo: "MAT-ORD",
+      nombre: "Matrícula Ordinaria",
+      tipo: "COBRO",
+      activo: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "cd_002",
+      codigo: "SEG-EST",
+      nombre: "Seguro Estudiantil",
+      tipo: "COBRO",
+      activo: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "cd_003",
+      codigo: "REC-CAJA",
+      nombre: "Recaudo Caja",
+      tipo: "PAGO",
+      activo: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ],
 };
 
 globalThis.__uesMockDb = state;
@@ -140,6 +169,57 @@ export const MockDb = {
     };
     state.planes[idx] = next;
     return clone(next);
+  },
+
+  listCodigosDetalle({ tipo } = {}) {
+    const list = state.codigosDetalle;
+    const filtered = tipo ? list.filter((c) => c.tipo === tipo) : list;
+    return clone(filtered);
+  },
+  getCodigoDetalle(id) {
+    return clone(state.codigosDetalle.find((c) => c.id === id) ?? null);
+  },
+  createCodigoDetalle(input) {
+    const now = new Date().toISOString();
+    const record = {
+      id: makeId("cd"),
+      codigo: String(input.codigo ?? "").trim().toUpperCase(),
+      nombre: String(input.nombre ?? "").trim(),
+      tipo: String(input.tipo ?? "COBRO").trim().toUpperCase(),
+      activo: Boolean(input.activo ?? true),
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.codigosDetalle.unshift(record);
+    return clone(record);
+  },
+  updateCodigoDetalle(id, patch) {
+    const idx = state.codigosDetalle.findIndex((c) => c.id === id);
+    if (idx === -1) return null;
+    const now = new Date().toISOString();
+    const prev = state.codigosDetalle[idx];
+    const next = {
+      ...prev,
+      codigo:
+        patch.codigo !== undefined
+          ? String(patch.codigo).trim().toUpperCase()
+          : prev.codigo,
+      nombre: patch.nombre !== undefined ? String(patch.nombre).trim() : prev.nombre,
+      tipo:
+        patch.tipo !== undefined
+          ? String(patch.tipo).trim().toUpperCase()
+          : prev.tipo,
+      activo: patch.activo !== undefined ? Boolean(patch.activo) : prev.activo,
+      updatedAt: now,
+    };
+    state.codigosDetalle[idx] = next;
+    return clone(next);
+  },
+  deleteCodigoDetalle(id) {
+    const idx = state.codigosDetalle.findIndex((c) => c.id === id);
+    if (idx === -1) return false;
+    state.codigosDetalle.splice(idx, 1);
+    return true;
   },
 };
 
