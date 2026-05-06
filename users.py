@@ -1,7 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from typing import Optional
-from sqlalchemy import exists
 from sqlalchemy.orm import Session
 
 import database
@@ -14,7 +11,10 @@ router = APIRouter(prefix="/users")
 
 # FUNCTIONS
 def get_user_by_id(user_id: int, db: Session):
-    return db.query(models.User).filter(models.User.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    return user
 
 # ----------------------
 
@@ -31,10 +31,7 @@ def get_user(
         current_user: models.User = Depends(auth.require_role(models.Role.ADMINISTRATOR)), 
         db: Session = Depends(database.get_db)
 ):
-    user = get_user_by_id(user_id, db)
-    if not user:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
-    return user
+    return get_user_by_id(user_id, db)
 
 
 @router.put("/{user_id}", response_model=schemas.UserOut)
@@ -45,9 +42,7 @@ def update_user(
         db: Session = Depends(database.get_db)
 ):
     user = get_user_by_id(user_id, db)
-    if not user:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
-    
+
     if data.name is not None:
         user.name = data.name
     if data.email is not None:
@@ -70,8 +65,7 @@ def deactivate_user(
         db: Session = Depends(database.get_db)
 ):
     user = get_user_by_id(user_id, db)
-    if not user:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+
     if not user.active:
         return {"msg": "user already deactivated"}
     user.active = False
@@ -87,8 +81,7 @@ def activate_user(
         db: Session = Depends(database.get_db)
 ):
     user = get_user_by_id(user_id, db)
-    if not user:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+
     if user.active:
         return {"msg": "user already activated"}
     user.active = True
