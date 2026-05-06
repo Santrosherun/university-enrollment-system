@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, Enum
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Integer, Boolean, Enum
 from database import Base
 import enum 
 
@@ -12,11 +13,9 @@ class Role(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    role = Column(Enum(Role), nullable=False)
-    active = Column(Boolean, default=True)
-
-
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[Role] = mapped_column(Enum(Role), nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
