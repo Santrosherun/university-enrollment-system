@@ -69,7 +69,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 def require_role(*roles: models.Role):
     def dependency(user: models.User = Depends(get_current_user)):
         if user.role not in roles:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Role not valid")
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Role not valid") # No sufficent permissions
         return user
     return dependency
 
