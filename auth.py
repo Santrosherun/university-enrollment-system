@@ -3,16 +3,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from dotenv import load_dotenv
 import bcrypt
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
-from starlette.status import HTTP_400_BAD_REQUEST
 
 
-from models import User, Role
-from database import get_db
+import models
+import database
+import schemas
 
 
 load_dotenv()
@@ -24,30 +23,6 @@ EXPIRE_MIN = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 router = APIRouter(prefix="/auth")
 #------------
-
-
-# Schemes for body data in POST requests
-class CreateUser(BaseModel):
-    name: str
-    email: str
-    password: str
-    role: Role
- 
-class UserOut(BaseModel):
-    id: int
-    name: str
-    email: str
-    role: Role
-    active: bool
- 
-    class Config:
-        from_attributes = True
- 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    user: UserOut
-#----------------
 
 
 # Functions
@@ -68,7 +43,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(updated_data, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)) -> models.User:
     
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -84,15 +59,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise credentials_exception
     
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(models.User).filter(models.User.email == email).first()
     if user is None or not bool(user.active):
         raise credentials_exception
 
     return user
 
 
-def require_role(*roles: Role):
-    def dependency(user: User = Depends(get_current_user)):
+def require_role(*roles: models.Role):
+    def dependency(user: models.User = Depends(get_current_user)):
         if user.role not in roles:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Role not valid")
         return user
@@ -101,16 +76,16 @@ def require_role(*roles: Role):
 # ------------------
 
 # ENDPOINTS
-@router.post("/register", response_model=UserOut, status_code=201)
-def register(data: CreateUser, db : Session = Depends(get_db)):
+@router.post("/register", response_model=schemas.UserOut, status_code=201)
+def register(data: schemas.UserCreate, db : Session = Depends(database.get_db)):
 
     # Verify if email already exists
-    exists = db.query(User).filter(User.email == data.email).first()
+    exists = db.query(models.User).filter(models.User.email == data.email).first()
 
     if exists:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email already registered")
 
-    user = User(
+    user = models.User(
         name=data.name,
         email=data.email,
         password_hash=hash_password(data.password),
@@ -123,9 +98,9 @@ def register(data: CreateUser, db : Session = Depends(get_db)):
     return user
 
 
-@router.post("/login", response_model=Token)
-def login(data: OAuth2PasswordRequestForm = Depends(), db : Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.username).first() # FASTAPI uses username (OAUTH2 convention), but we are getting email
+@router.post("/login", response_model=schemas.Token)
+def login(data: OAuth2PasswordRequestForm = Depends(), db : Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.email == data.username).first() # FASTAPI uses username (OAUTH2 convention), but we are getting email
     
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
@@ -143,6 +118,6 @@ def login(data: OAuth2PasswordRequestForm = Depends(), db : Session = Depends(ge
 
 
 @router.get("/me")
-def me(user: User = Depends(get_current_user)):
+def me(user: models.User = Depends(get_current_user)):
     return user
 
