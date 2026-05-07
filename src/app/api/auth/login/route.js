@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
+import { MockDb } from "@/lib/mocks/db";
 import { authenticateDemoUser } from "@/lib/mocks/auth";
+
 
 export async function POST(request) {
   const body = await request.json().catch(() => null);
@@ -69,16 +71,21 @@ export async function POST(request) {
       payload?.accessToken;
     role = payload?.role ?? payload?.user?.role ?? null;
   } else {
-    const user = authenticateDemoUser(username, password);
-    if (!user) {
+    const loginResult = MockDb.login(username, password);
+    if (!loginResult) {
       return Response.json(
-        { message: "Credenciales demo inválidas." },
+        { message: "Credenciales inválidas o usuario no existe." },
         { status: 401 },
       );
     }
-    token = `demo.${user.username}.token`;
-    role = user.role;
+    token = loginResult.token;
+    role = loginResult.user.rol; // El rol guardado en DB (ADMIN, ASISTENTE)
+
+    // Mapear roles internos a los roles de navegación si son diferentes
+    if (role === "ADMIN") role = "ADMINISTRADOR";
   }
+
+
 
   if (!token) {
     return Response.json(

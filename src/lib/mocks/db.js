@@ -9,9 +9,14 @@ function clone(value) {
 // NOTE: In-memory mock DB. In dev, hot-reload may reset data.
 // This is enough to build screens while backend is not ready.
 const defaultState = {
+  usuarios: [
+    { id: "user_001", nombre: "Administrador", email: "admin@ues.edu.co", password: "admin123", rol: "ADMIN" },
+    { id: "user_002", nombre: "Asistente de Tesorería", email: "asistente@ues.edu.co", password: "asistente123", rol: "ASISTENTE" },
+  ],
   programas: [
     {
       id: "prog_001",
+
       codigo: "ADM",
       nombre: "Administración de Empresas",
       modalidad: "PRESENCIAL",
@@ -613,6 +618,57 @@ export const MockDb = {
       },
       porPrograma
     };
+  },
+
+  login(email, password) {
+    const user = state.usuarios.find(u => u.email === email && u.password === password);
+    if (!user) return null;
+
+    // Retornamos una copia sin el password
+    const sessionUser = clone(user);
+    delete sessionUser.password;
+    
+    return {
+      user: sessionUser,
+      token: `mock_jwt_token_${user.id}_${Date.now()}`
+    };
+  },
+
+  getUserById(id) {
+    const user = state.usuarios.find(u => u.id === id);
+    if (!user) return null;
+    const sessionUser = clone(user);
+    delete sessionUser.password;
+    return sessionUser;
+  },
+
+  listUsuarios() {
+    return state.usuarios.map(u => {
+      const copy = clone(u);
+      delete copy.password;
+      return copy;
+    });
+  },
+
+  createUser(data) {
+    const newUser = {
+      ...data,
+      id: makeId("user"),
+      createdAt: new Date().toISOString()
+    };
+    state.usuarios.push(newUser);
+    const copy = clone(newUser);
+    delete copy.password;
+    return copy;
+  },
+
+  updateUser(id, data) {
+    const idx = state.usuarios.findIndex(u => u.id === id);
+    if (idx === -1) return null;
+    state.usuarios[idx] = { ...state.usuarios[idx], ...data };
+    const copy = clone(state.usuarios[idx]);
+    delete copy.password;
+    return copy;
   }
 };
 
