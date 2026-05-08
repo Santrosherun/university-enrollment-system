@@ -61,4 +61,23 @@ class Token(BaseModel):
     user: UsuarioOut
 
 
+# CODIGOS DE DETALLE
+class CodigoDetalleCreate(BaseModel):
+    codigo      : str
+    descripcion : str
+    grupo       : str  # "COBRO" o "PAGO"
 
+class CodigoDetalleUpdate(BaseModel):
+    descripcion : Optional[str] = None
+    grupo       : Optional[str] = None
+    estado      : Optional[str] = None
+
+class CodigoDetalleOut(BaseModel):
+    id_codigo_detalle : int
+    codigo            : str
+    descripcion       : str
+    grupo             : str
+    estado            : str
+
+    class Config:
+        from_attributes = True
