@@ -1,10 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import auth
-import codigos_detalle
+
+from routers import auth, users, codigos_detalle, programas
 import database
-import users
 
 
 database.Base.metadata.create_all(bind=database.engine) # Create tables if don't exist
@@ -23,7 +22,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(codigos_detalle.router)
-
+app.include_router(programas.router)
 
 @app.get("/")
 def root():

@@ -7,7 +7,7 @@ from sqlalchemy.sql.functions import mode
 import database
 import schemas
 import models
-import auth
+from routers import auth
 
 
 router = APIRouter(prefix="/codigos-detalle")

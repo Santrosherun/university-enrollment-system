@@ -60,6 +60,9 @@ class Token(BaseModel):
     token_type: str
     user: UsuarioOut
 
+#-------------------------------
+
+
 
 # CODIGOS DE DETALLE
 class CodigoDetalleCreate(BaseModel):
@@ -78,6 +81,78 @@ class CodigoDetalleOut(BaseModel):
     descripcion       : str
     grupo             : str
     estado            : str
+
+    class Config:
+        from_attributes = True
+
+
+# PROGRAMAS ACADÉMICOS
+class ProgramaCreate(BaseModel):
+    codigo_programa    : str
+    nombre_programa    : str
+    duracion_semestres : int
+    modalidad_programa : str  # PRESENCIAL, VIRTUAL, HIBRIDO
+    nivel_formacion    : str  # PREGRADO, POSGRADO, TECNICO
+
+class ProgramaUpdate(BaseModel):
+    nombre_programa    : Optional[str] = None
+    duracion_semestres : Optional[int] = None
+    modalidad_programa : Optional[str] = None
+    nivel_formacion    : Optional[str] = None
+    estado             : Optional[str] = None
+
+class ProgramaOut(BaseModel):
+    id_programa        : int
+    codigo_programa    : str
+    nombre_programa    : str
+    duracion_semestres : int
+    modalidad_programa : str
+    nivel_formacion    : str
+    estado             : str
+
+    class Config:
+        from_attributes = True
+
+
+# ASIGNATURAS
+class AsignaturaCreate(BaseModel):
+    codigo_asignatura : str
+    nombre_asignatura : str
+    tipo_asignatura   : str  # OBLIGATORIA, ELECTIVA
+    creditos          : int
+
+class AsignaturaUpdate(BaseModel):
+    nombre_asignatura : Optional[str] = None
+    tipo_asignatura   : Optional[str] = None
+    creditos          : Optional[int] = None
+    estado            : Optional[str] = None
+
+class AsignaturaOut(BaseModel):
+    id_asignatura     : int
+    codigo_asignatura : str
+    nombre_asignatura : str
+    tipo_asignatura   : str
+    creditos          : int
+    estado            : str
+
+    class Config:
+        from_attributes = True
+
+
+# PLAN DE ESTUDIO
+class PlanEstudioCreate(BaseModel):
+    id_asignatura  : int
+    semestre       : int
+    creditos_plan  : int
+    es_obligatoria : bool = True
+
+class PlanEstudioOut(BaseModel):
+    id_programa    : int
+    id_asignatura  : int
+    semestre       : int
+    creditos_plan  : int
+    es_obligatoria : bool
+    asignatura     : AsignaturaOut
 
     class Config:
         from_attributes = True

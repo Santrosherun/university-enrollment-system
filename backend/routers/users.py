@@ -4,7 +4,7 @@ from sqlalchemy.sql.functions import user
 
 import database
 import models
-import auth
+from routers import auth
 import schemas
 
 router = APIRouter(prefix="/users")
