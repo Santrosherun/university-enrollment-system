@@ -79,9 +79,9 @@ export default function ProgramasPage() {
     if (!q) return items;
     return items.filter(
       (p) =>
-        p.codigo?.toLowerCase().includes(q) ||
-        p.nombre?.toLowerCase().includes(q) ||
-        p.modalidad?.toLowerCase().includes(q),
+        p.codigo_programa?.toLowerCase().includes(q) ||
+        p.nombre_programa?.toLowerCase().includes(q) ||
+        p.modalidad_programa?.toLowerCase().includes(q),
     );
   }, [items, query]);
 
@@ -105,8 +105,8 @@ export default function ProgramasPage() {
   }, []);
 
   async function save(form) {
-    const isEdit = Boolean(editing?.id);
-    const url = isEdit ? `/api/programas/${editing.id}` : "/api/programas";
+    const isEdit = Boolean(editing?.id_programa);
+    const url = isEdit ? `/api/programas/${editing.id_programa}` : "/api/programas";
     const method = isEdit ? "PUT" : "POST";
 
     const res = await fetch(url, {
@@ -126,17 +126,18 @@ export default function ProgramasPage() {
   }
 
   async function toggleActivo(item) {
-    const res = await fetch(`/api/programas/${item.id}`, {
+    const nuevoEstado = item.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    const res = await fetch(`/api/programas/${item.id_programa}`, {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ activo: !item.activo }),
+      body: JSON.stringify({ estado: nuevoEstado }),
     });
     if (!res.ok) return;
     await load();
   }
 
   async function removePrograma(item) {
-    const res = await fetch(`/api/programas/${item.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/programas/${item.id_programa}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) {
       const payload = await res.json().catch(() => null);
       throw new Error(payload?.message ?? "No se pudo eliminar el programa.");
@@ -205,24 +206,24 @@ export default function ProgramasPage() {
               </thead>
               <tbody>
                 {filtered.map((p) => (
-                  <tr key={p.id} className="border-b border-app-border/70">
+                  <tr key={p.id_programa} className="border-b border-app-border/70">
                     <td className="py-3 pr-4 font-medium text-foreground">
-                      {p.codigo}
+                      {p.codigo_programa}
                     </td>
-                    <td className="py-3 pr-4 text-foreground">{p.nombre}</td>
+                    <td className="py-3 pr-4 text-foreground">{p.nombre_programa}</td>
                     <td className="py-3 pr-4 text-foreground/90">
-                      {p.modalidad}
+                      {p.modalidad_programa}
                     </td>
                     <td className="py-3 pr-4">
                       <span
                         className={[
                           "inline-flex rounded-full px-2 py-1 text-xs font-medium",
-                          p.activo
+                          p.estado === "ACTIVO"
                             ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                             : "bg-zinc-100 text-zinc-700 border border-app-border",
                         ].join(" ")}
                       >
-                        {p.activo ? "Activo" : "Inactivo"}
+                        {p.estado === "ACTIVO" ? "Activo" : "Inactivo"}
                       </span>
                     </td>
                     <td className="py-3 text-right">
@@ -242,7 +243,7 @@ export default function ProgramasPage() {
                           size="sm"
                           onClick={() => toggleActivo(p)}
                         >
-                          {p.activo ? "Desactivar" : "Activar"}
+                          {p.estado === "ACTIVO" ? "Desactivar" : "Activar"}
                         </Button>
                         <Button
                           variant="danger"
@@ -287,7 +288,7 @@ export default function ProgramasPage() {
             <span>
               ¿Seguro que quieres eliminar{" "}
               <strong className="text-foreground">
-                {deleteTarget.codigo} — {deleteTarget.nombre}
+                {deleteTarget.codigo_programa} — {deleteTarget.nombre_programa}
               </strong>
               ? En modo demo también se borran los{" "}
               <strong className="text-foreground">planes de estudio</strong>{" "}
@@ -304,10 +305,10 @@ export default function ProgramasPage() {
 }
 
 function ProgramaFormModal({ title, initial, onClose, onSave }) {
-  const [codigo, setCodigo] = useState(initial?.codigo ?? "");
-  const [nombre, setNombre] = useState(initial?.nombre ?? "");
-  const [modalidad, setModalidad] = useState(initial?.modalidad ?? "PRESENCIAL");
-  const [activo, setActivo] = useState(Boolean(initial?.activo ?? true));
+  const [codigo_programa, setCodigo] = useState(initial?.codigo_programa ?? "");
+  const [nombre_programa, setNombre] = useState(initial?.nombre_programa ?? "");
+  const [modalidad_programa, setModalidad] = useState(initial?.modalidad_programa ?? "PRESENCIAL");
+  const [estado, setEstado] = useState(initial?.estado ?? "ACTIVO");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
 
@@ -316,7 +317,7 @@ function ProgramaFormModal({ title, initial, onClose, onSave }) {
     setStatus("loading");
     setError(null);
     try {
-      await onSave({ codigo, nombre, modalidad, activo });
+      await onSave({ codigo_programa, nombre_programa, modalidad_programa, estado });
     } catch (err) {
       setError(err?.message ?? "No se pudo guardar.");
       setStatus("idle");
@@ -334,7 +335,7 @@ function ProgramaFormModal({ title, initial, onClose, onSave }) {
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">Código</label>
             <input
-              value={codigo}
+              value={codigo_programa}
               onChange={(e) => setCodigo(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               placeholder="Ej: ING-SIS"
@@ -346,7 +347,7 @@ function ProgramaFormModal({ title, initial, onClose, onSave }) {
               Modalidad
             </label>
             <select
-              value={modalidad}
+              value={modalidad_programa}
               onChange={(e) => setModalidad(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               required
@@ -363,7 +364,7 @@ function ProgramaFormModal({ title, initial, onClose, onSave }) {
         <div className="space-y-1">
           <label className="text-sm font-medium text-foreground">Nombre</label>
           <input
-            value={nombre}
+            value={nombre_programa}
             onChange={(e) => setNombre(e.target.value)}
             className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
             placeholder="Ej: Ingeniería de Sistemas"
@@ -371,15 +372,17 @@ function ProgramaFormModal({ title, initial, onClose, onSave }) {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            checked={activo}
-            onChange={(e) => setActivo(e.target.checked)}
-            className="h-4 w-4 rounded border-app-border text-app-accent focus:ring-app-accent/30"
-          />
-          Activo
-        </label>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-foreground">Estado</label>
+          <select
+            value={estado}
+            onChange={(e) => setEstado(e.target.value)}
+            className="rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm outline-none focus:border-app-accent"
+          >
+            <option value="ACTIVO">Activo</option>
+            <option value="INACTIVO">Inactivo</option>
+          </select>
+        </div>
 
         {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">

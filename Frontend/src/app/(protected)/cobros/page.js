@@ -43,6 +43,7 @@ export default function CobrosPage() {
   const [items, setItems] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
   const [programas, setProgramas] = useState([]);
+  const [codigosDetalle, setCodigosDetalle] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -57,7 +58,7 @@ export default function CobrosPage() {
   const filtered = useMemo(() => {
     let list = items;
     if (filterPeriodo) {
-      list = list.filter((c) => c.periodo.includes(filterPeriodo));
+      list = list.filter((c) => c.id_periodo.toLowerCase().includes(filterPeriodo.toLowerCase()));
     }
     if (filterEstado) {
       list = list.filter((c) => c.estado === filterEstado);
@@ -80,19 +81,27 @@ export default function CobrosPage() {
         throw new Error("Error al cargar datos del sistema.");
       }
 
+      const checkJson = async (res) => {
+        const ct = res.headers.get("content-type");
+        if (!ct || !ct.includes("application/json")) {
+           const t = await res.text();
+           console.error(`Route ${res.url} returned non-JSON:`, t.substring(0, 100));
+           throw new Error(`La ruta ${new URL(res.url).pathname} no devolvió JSON.`);
+        }
+        return res.json();
+      };
+
       const [dataCobros, dataEst, dataProg, dataCodes] = await Promise.all([
-        resCobros.json(),
-        resEst.json(),
-        resProg.json(),
-        resCodes.json(),
+        checkJson(resCobros),
+        checkJson(resEst),
+        checkJson(resProg),
+        checkJson(resCodes),
       ]);
 
       setItems(dataCobros.items ?? []);
       setEstudiantes(dataEst.items ?? []);
       setProgramas(dataProg.items ?? []);
-      // No necesitamos guardar codigos-detalle en el estado global si solo se usan en el modal,
-      // pero los pasaremos al modal de detalle.
-      window.__codigosDetalle = dataCodes.items ?? []; 
+      setCodigosDetalle(dataCodes.items ?? []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -113,9 +122,6 @@ export default function CobrosPage() {
     await loadData();
     setDeleteTarget(null);
   }
-
-  const getEstName = (id) => estudiantes.find((e) => e.id === id)?.nombreCompleto ?? id;
-  const getEstDoc = (id) => estudiantes.find((e) => e.id === id)?.numeroDocumento ?? "";
 
   return (
     <div className="space-y-7">
@@ -157,7 +163,7 @@ export default function CobrosPage() {
               className="mt-1 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
             >
               <option value="">Todos los estados</option>
-              <option value="PENDIENTE">Pendiente</option>
+              <option value="GENERADO">Generado</option>
               <option value="PAGADO">Pagado</option>
               <option value="ANULADO">Anulado</option>
             </select>
@@ -180,6 +186,7 @@ export default function CobrosPage() {
             <table className="min-w-full text-left text-sm">
               <thead className="text-xs uppercase text-app-muted">
                 <tr className="border-b border-app-border">
+                  <th className="py-3 pr-4">Número Volante</th>
                   <th className="py-3 pr-4">Estudiante</th>
                   <th className="py-3 pr-4">Periodo</th>
                   <th className="py-3 pr-4">Valor Total</th>
@@ -189,13 +196,16 @@ export default function CobrosPage() {
               </thead>
               <tbody>
                 {filtered.map((item) => (
-                  <tr key={item.id} className="border-b border-app-border/70 hover:bg-zinc-50/50">
+                  <tr key={item.id_volante} className="border-b border-app-border/70 hover:bg-zinc-50/50">
+                    <td className="py-3 pr-4 font-mono text-xs text-foreground">
+                      {item.numero_volante}
+                    </td>
                     <td className="py-3 pr-4">
-                      <div className="font-medium text-foreground">{getEstName(item.estudianteId)}</div>
-                      <div className="text-xs text-app-muted">{getEstDoc(item.estudianteId)}</div>
+                      <div className="font-medium text-foreground">{item.estudiante_nombre}</div>
+                      <div className="text-xs text-app-muted">ID: {item.id_estudiante}</div>
                     </td>
                     <td className="py-3 pr-4 text-foreground">
-                      {item.periodo}
+                      {item.id_periodo}
                     </td>
                     <td className="py-3 pr-4 font-semibold text-app-accent">
                       {formatCurrency(item.total)}
@@ -204,7 +214,7 @@ export default function CobrosPage() {
                       <span
                         className={[
                           "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                          item.estado === "PENDIENTE" ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                          item.estado === "GENERADO" ? "bg-amber-50 text-amber-700 border border-amber-100" :
                           item.estado === "PAGADO" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
                           "bg-zinc-100 text-zinc-600 border border-zinc-200"
                         ].join(" ")}
@@ -215,12 +225,12 @@ export default function CobrosPage() {
                     <td className="py-3 text-right">
                       <div className="inline-flex flex-wrap justify-end gap-2">
                         <a 
-                          href={`/api/cobros/${item.id}/pdf`} 
+                          href={`/api/cobros/${item.id_volante}/pdf`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                         >
                           <Button variant="secondary" size="sm">
-                            Imprimir Volante (PDF)
+                            Imprimir Volante
                           </Button>
                         </a>
                         <Button
@@ -231,7 +241,7 @@ export default function CobrosPage() {
                           Ver Detalle
                         </Button>
 
-                        {item.estado === "PENDIENTE" && (
+                        {item.estado === "GENERADO" && (
                           <Button
                             variant="danger"
                             size="sm"
@@ -242,12 +252,11 @@ export default function CobrosPage() {
                         )}
                       </div>
                     </td>
-
                   </tr>
                 ))}
                 {filtered.length === 0 ? (
                   <tr>
-                    <td className="py-6 text-sm text-app-muted" colSpan={5}>
+                    <td className="py-6 text-sm text-app-muted" colSpan={6}>
                       No se han encontrado cobros generados.
                     </td>
                   </tr>
@@ -261,6 +270,7 @@ export default function CobrosPage() {
       {showIndividual && (
         <GeneracionIndividualModal
           estudiantes={estudiantes}
+          codigosDetalle={codigosDetalle}
           onClose={() => setShowIndividual(false)}
           onSuccess={loadData}
         />
@@ -277,8 +287,8 @@ export default function CobrosPage() {
       {viewingCobro && (
         <DetalleCobroModal
           cobro={viewingCobro}
-          estudiante={estudiantes.find(e => e.id === viewingCobro.estudianteId)}
-          codigosDetalle={window.__codigosDetalle || []}
+          estudiante={estudiantes.find(e => e.id_estudiante === viewingCobro.id_estudiante)}
+          codigosDetalle={codigosDetalle}
           onClose={() => setViewingCobro(null)}
         />
       )}
@@ -289,12 +299,12 @@ export default function CobrosPage() {
           onClose={() => setDeleteTarget(null)}
         >
           <div className="text-sm text-app-muted">
-            ¿Estás seguro de que deseas eliminar este cobro de <strong className="text-foreground">{getEstName(deleteTarget.estudianteId)}</strong>?
+            ¿Estás seguro de que deseas eliminar el volante <strong className="text-foreground">{deleteTarget.numero_volante}</strong> de <strong className="text-foreground">{deleteTarget.estudiante_nombre}</strong>?
             Esta acción no se puede deshacer.
           </div>
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
-            <Button variant="danger" onClick={() => removeCobro(deleteTarget.id)}>Eliminar definitivamente</Button>
+            <Button variant="danger" onClick={() => removeCobro(deleteTarget.id_volante)}>Eliminar definitivamente</Button>
           </div>
         </ConfirmModal>
       )}
@@ -310,25 +320,59 @@ function ConfirmModal({ title, children, onClose }) {
   );
 }
 
-function GeneracionIndividualModal({ estudiantes, onClose, onSuccess }) {
-  const [estudianteId, setEstudianteId] = useState("");
-  const [periodo, setPeriodo] = useState("2024-1");
+function GeneracionIndividualModal({ estudiantes, codigosDetalle, onClose, onSuccess }) {
+  const [id_estudiante, setEstId] = useState("");
+  const [id_periodo, setPeriodo] = useState("2024-1");
+  const [tipo, setTipo] = useState("MATRICULA"); // MATRICULA or OTRO
+  const [id_codigo_detalle, setCodigoId] = useState("");
+  const [valor, setValor] = useState("");
+  const [modalidad_cobro, setModalidad] = useState("GLOBAL");
+  const [semestre, setSemestre] = useState("1");
+  const [asignaturasPlan, setAsignaturasPlan] = useState([]);
+  const [asignaturasSeleccionadas, setAsignaturasSeleccionadas] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!id_estudiante || modalidad_cobro !== "CREDITO" || tipo !== "MATRICULA") {
+      setAsignaturasPlan([]);
+      return;
+    }
+    const est = estudiantes.find(e => e.id_estudiante === id_estudiante);
+    if (!est) return;
+    
+    fetch(`/api/planes?id_programa=${est.id_programa}`)
+      .then(r => r.json())
+      .then(d => {
+         const asigs = (d.items || []).filter(a => String(a.semestre) === String(semestre));
+         setAsignaturasPlan(asigs);
+         setAsignaturasSeleccionadas(asigs.map(a => a.id_asignatura));
+      })
+      .catch(console.error);
+  }, [id_estudiante, modalidad_cobro, semestre, estudiantes, tipo]);
 
   async function submit(e) {
     e.preventDefault();
     setStatus("loading");
     setError(null);
     try {
+      const payload = { 
+        id_estudiante, 
+        id_periodo, 
+        modalidad_cobro: tipo === "MATRICULA" ? modalidad_cobro : "OTRO",
+        id_codigo_detalle: tipo === "OTRO" ? id_codigo_detalle : undefined,
+        valor: tipo === "OTRO" ? Number(valor) : undefined,
+        asignaturas: tipo === "MATRICULA" && modalidad_cobro === "CREDITO" ? asignaturasSeleccionadas : undefined
+      };
+
       const res = await fetch("/api/cobros", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ estudianteId, periodo }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        throw new Error(payload?.message ?? "Error al generar cobro.");
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message ?? "Error al generar cobro.");
       }
       onSuccess();
       onClose();
@@ -339,34 +383,139 @@ function GeneracionIndividualModal({ estudiantes, onClose, onSuccess }) {
   }
 
   return (
-    <Modal title="Generación Individual" hint="Selecciona un estudiante para crear su cobro." onClose={onClose}>
+    <Modal title="Generación Individual" hint="Selecciona el concepto y el estudiante." onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1">
           <label className="text-sm font-medium text-foreground">Estudiante</label>
           <select
-            value={estudianteId}
-            onChange={(e) => setEstudianteId(e.target.value)}
+            value={id_estudiante}
+            onChange={(e) => setEstId(e.target.value)}
             className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
             required
           >
             <option value="">Selecciona un estudiante...</option>
             {estudiantes.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.numeroDocumento} - {e.nombreCompleto}
+              <option key={e.id_estudiante} value={e.id_estudiante}>
+                {e.numero_identificacion} - {e.primer_nombre} {e.primer_apellido}
               </option>
             ))}
           </select>
         </div>
+
         <div className="space-y-1">
-          <label className="text-sm font-medium text-foreground">Periodo Académico</label>
-          <input
-            value={periodo}
-            onChange={(e) => setPeriodo(e.target.value)}
-            className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
-            placeholder="Ej: 2024-1"
-            required
-          />
+          <label className="text-sm font-medium text-foreground">Tipo de Cobro</label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input type="radio" checked={tipo === "MATRICULA"} onChange={() => setTipo("MATRICULA")} />
+              Matrícula Académica
+            </label>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input type="radio" checked={tipo === "OTRO"} onChange={() => setTipo("OTRO")} />
+              Otro Servicio / Trámite
+            </label>
+          </div>
         </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Periodo Académico</label>
+            <input
+              value={id_periodo}
+              onChange={(e) => setPeriodo(e.target.value)}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              required
+            />
+          </div>
+          {tipo === "MATRICULA" ? (
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Modalidad de Cobro</label>
+              <select
+                value={modalidad_cobro}
+                onChange={(e) => setModalidad(e.target.value)}
+                className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+                required
+              >
+                <option value="GLOBAL">Global</option>
+                <option value="CREDITO">Por Créditos</option>
+              </select>
+            </div>
+          ) : (
+             <div className="space-y-1">
+               <label className="text-sm font-medium text-foreground">Concepto</label>
+               <select
+                 value={id_codigo_detalle}
+                 onChange={(e) => setCodigoId(e.target.value)}
+                 className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+                 required
+               >
+                 <option value="">Selecciona concepto...</option>
+                 {codigosDetalle.filter(c => c.tipo_codigo === "COBRO").map(c => (
+                    <option key={c.id_codigo_detalle} value={c.id_codigo_detalle}>{c.nombre_codigo}</option>
+                 ))}
+               </select>
+             </div>
+          )}
+        </div>
+
+        {tipo === "OTRO" && (
+           <div className="space-y-1">
+             <label className="text-sm font-medium text-foreground">Valor del Concepto</label>
+             <input
+               type="number"
+               value={valor}
+               onChange={(e) => setValor(e.target.value)}
+               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+               placeholder="Ej: 50000"
+               required
+             />
+           </div>
+        )}
+
+         {tipo === "MATRICULA" && modalidad_cobro === "CREDITO" && (
+           <div className="space-y-4 pt-4 border-t border-app-border">
+             <div className="space-y-1">
+               <label className="text-sm font-medium text-foreground">Semestre a cursar</label>
+               <select
+                 value={semestre}
+                 onChange={(e) => setSemestre(e.target.value)}
+                 className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+               >
+                 {[1,2,3,4,5,6,7,8,9,10].map(s => <option key={s} value={s}>Semestre {s}</option>)}
+               </select>
+             </div>
+             
+             {asignaturasPlan.length > 0 ? (
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-foreground">Asignaturas a matricular</label>
+                 <div className="grid gap-2 max-h-40 overflow-y-auto pr-2">
+                   {asignaturasPlan.map(asig => (
+                     <label key={asig.id_asignatura} className="flex items-start gap-3 p-3 rounded-xl border border-app-border/60 bg-zinc-50/50 hover:bg-zinc-50 cursor-pointer">
+                       <input 
+                         type="checkbox"
+                         className="mt-1"
+                         checked={asignaturasSeleccionadas.includes(asig.id_asignatura)}
+                         onChange={(e) => {
+                           if (e.target.checked) setAsignaturasSeleccionadas([...asignaturasSeleccionadas, asig.id_asignatura]);
+                           else setAsignaturasSeleccionadas(asignaturasSeleccionadas.filter(id => id !== asig.id_asignatura));
+                         }}
+                       />
+                       <div>
+                         <div className="text-sm font-medium text-foreground">{asig.asignatura_nombre}</div>
+                         <div className="text-xs text-app-muted">{asig.creditos} Créditos — Código: {asig.asignatura_codigo}</div>
+                       </div>
+                     </label>
+                   ))}
+                 </div>
+                 <div className="text-xs font-bold text-app-accent text-right">
+                   Total Créditos Seleccionados: {asignaturasPlan.filter(a => asignaturasSeleccionadas.includes(a.id_asignatura)).reduce((acc, a) => acc + (a.creditos||0), 0)}
+                 </div>
+               </div>
+             ) : (
+               <div className="text-sm text-app-muted py-2">No hay asignaturas en el plan para este semestre.</div>
+             )}
+           </div>
+         )}
+
         {error && (
           <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-3 rounded-lg">{error}</div>
         )}
@@ -382,8 +531,8 @@ function GeneracionIndividualModal({ estudiantes, onClose, onSuccess }) {
 }
 
 function GeneracionMasivaModal({ programas, onClose, onSuccess }) {
-  const [programaId, setProgramaId] = useState("");
-  const [periodo, setPeriodo] = useState("2024-1");
+  const [id_programa, setProgId] = useState("");
+  const [id_periodo, setPeriodo] = useState("2024-1");
   const [status, setStatus] = useState("idle");
   const [result, setResult] = useState(null);
 
@@ -395,7 +544,7 @@ function GeneracionMasivaModal({ programas, onClose, onSuccess }) {
       const res = await fetch("/api/cobros/generate-mass", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ programaId, periodo }),
+        body: JSON.stringify({ id_programa, id_periodo }),
       });
       const data = await res.json();
       setResult(data);
@@ -412,15 +561,15 @@ function GeneracionMasivaModal({ programas, onClose, onSuccess }) {
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">Programa Académico</label>
             <select
-              value={programaId}
-              onChange={(e) => setProgramaId(e.target.value)}
+              value={id_programa}
+              onChange={(e) => setProgId(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               required
             >
               <option value="">Todos los programas...</option>
               {programas.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
+                <option key={p.id_programa} value={p.id_programa}>
+                  {p.nombre_programa}
                 </option>
               ))}
             </select>
@@ -428,7 +577,7 @@ function GeneracionMasivaModal({ programas, onClose, onSuccess }) {
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">Periodo Académico</label>
             <input
-              value={periodo}
+              value={id_periodo}
               onChange={(e) => setPeriodo(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               placeholder="Ej: 2024-1"
@@ -446,18 +595,8 @@ function GeneracionMasivaModal({ programas, onClose, onSuccess }) {
         <div className="space-y-4">
           <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
             <div className="text-emerald-800 font-semibold">Proceso finalizado</div>
-            <div className="text-sm text-emerald-700">Se generaron satisfactoriamente <strong>{result.count}</strong> cobros.</div>
+            <div className="text-sm text-emerald-700">Se procesaron los estudiantes vinculados.</div>
           </div>
-          {result.errors.length > 0 && (
-            <div className="max-h-40 overflow-y-auto space-y-2">
-              <div className="text-xs font-semibold text-app-muted uppercase">Errores encontrados ({result.errors.length}):</div>
-              {result.errors.map((err, i) => (
-                <div key={i} className="text-xs text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">
-                  <strong>{err.estudiante}</strong>: {err.error}
-                </div>
-              ))}
-            </div>
-          )}
           <div className="flex justify-end">
             <Button onClick={onClose}>Finalizar</Button>
           </div>
@@ -468,20 +607,20 @@ function GeneracionMasivaModal({ programas, onClose, onSuccess }) {
 }
 
 function DetalleCobroModal({ cobro, estudiante, codigosDetalle, onClose }) {
-  const getCodeName = (id) => codigosDetalle.find(c => c.id === id)?.nombre ?? "Concepto desconocido";
+  const getCodeName = (id) => codigosDetalle.find(c => c.id_codigo_detalle === id)?.nombre_codigo ?? "Concepto desconocido";
 
   return (
-    <Modal title="Detalle del Cobro" hint={`ID: ${cobro.id}`} onClose={onClose}>
+    <Modal title="Detalle del Volante" hint={`ID: ${cobro.id_volante}`} onClose={onClose}>
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4 rounded-xl bg-zinc-50 p-4 border border-app-border">
           <div>
             <div className="text-[10px] uppercase font-bold text-app-muted tracking-wider">Estudiante</div>
-            <div className="text-sm font-semibold text-foreground">{estudiante?.nombreCompleto}</div>
-            <div className="text-xs text-app-muted">{estudiante?.numeroDocumento}</div>
+            <div className="text-sm font-semibold text-foreground">{estudiante?.primer_nombre} {estudiante?.primer_apellido}</div>
+            <div className="text-xs text-app-muted">{estudiante?.numero_identificacion}</div>
           </div>
           <div>
             <div className="text-[10px] uppercase font-bold text-app-muted tracking-wider">Periodo</div>
-            <div className="text-sm font-semibold text-foreground">{cobro.periodo}</div>
+            <div className="text-sm font-semibold text-foreground">{cobro.id_periodo}</div>
             <div className="text-xs text-app-muted">Estado: {cobro.estado}</div>
           </div>
         </div>
@@ -495,12 +634,11 @@ function DetalleCobroModal({ cobro, estudiante, codigosDetalle, onClose }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-app-border/50">
-              {cobro.items.map((item, i) => (
-                <tr key={i}>
-                  <td className="py-3 text-foreground/80">{getCodeName(item.codigoDetalleId)}</td>
-                  <td className="py-3 text-right font-medium text-foreground">{formatCurrency(item.valor)}</td>
-                </tr>
-              ))}
+               {/* Note: Mock data logic for details might vary. We'll show the total as a placeholder if no details. */}
+               <tr>
+                  <td className="py-3 text-foreground/80">Cobro de Matrícula ({cobro.modalidad_cobro})</td>
+                  <td className="py-3 text-right font-medium text-foreground">{formatCurrency(cobro.total)}</td>
+               </tr>
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-app-border font-bold text-foreground">

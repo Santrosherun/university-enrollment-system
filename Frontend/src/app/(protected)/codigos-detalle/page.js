@@ -80,14 +80,14 @@ export default function CodigosDetallePage() {
     const q = query.trim().toLowerCase();
     
     if (filterTipo) {
-      list = list.filter((c) => c.tipo === filterTipo);
+      list = list.filter((c) => c.tipo_codigo === filterTipo);
     }
     
     if (q) {
       list = list.filter(
         (c) =>
-          c.codigo?.toLowerCase().includes(q) ||
-          c.nombre?.toLowerCase().includes(q)
+          c.id_codigo_detalle?.toLowerCase().includes(q) ||
+          c.nombre_codigo?.toLowerCase().includes(q)
       );
     }
     
@@ -114,8 +114,8 @@ export default function CodigosDetallePage() {
   }, []);
 
   async function save(form) {
-    const isEdit = Boolean(editing?.id);
-    const url = isEdit ? `/api/codigos-detalle/${editing.id}` : "/api/codigos-detalle";
+    const isEdit = Boolean(editing?.id_codigo_detalle);
+    const url = isEdit ? `/api/codigos-detalle/${editing.id_codigo_detalle}` : "/api/codigos-detalle";
     const method = isEdit ? "PUT" : "POST";
 
     const res = await fetch(url, {
@@ -135,17 +135,18 @@ export default function CodigosDetallePage() {
   }
 
   async function toggleActivo(item) {
-    const res = await fetch(`/api/codigos-detalle/${item.id}`, {
+    const nuevoEstado = item.estado_codigo === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    const res = await fetch(`/api/codigos-detalle/${item.id_codigo_detalle}`, {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ activo: !item.activo }),
+      body: JSON.stringify({ estado_codigo: nuevoEstado }),
     });
     if (!res.ok) return;
     await load();
   }
 
   async function removeCodigo(item) {
-    const res = await fetch(`/api/codigos-detalle/${item.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/codigos-detalle/${item.id_codigo_detalle}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) {
       const payload = await res.json().catch(() => null);
       throw new Error(payload?.message ?? "No se pudo eliminar el código.");
@@ -184,7 +185,7 @@ export default function CodigosDetallePage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="mt-1 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
-              placeholder="Código o nombre..."
+              placeholder="ID o nombre del código..."
             />
           </div>
           <div className="w-full md:w-48">
@@ -222,42 +223,46 @@ export default function CodigosDetallePage() {
             <table className="min-w-full text-left text-sm">
               <thead className="text-xs uppercase text-app-muted">
                 <tr className="border-b border-app-border">
-                  <th className="py-3 pr-4">Código</th>
+                  <th className="py-3 pr-4">ID / Código</th>
                   <th className="py-3 pr-4">Nombre</th>
                   <th className="py-3 pr-4">Tipo</th>
+                  <th className="py-3 pr-4 text-center">Prioridad</th>
                   <th className="py-3 pr-4">Estado</th>
                   <th className="py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((item) => (
-                  <tr key={item.id} className="border-b border-app-border/70">
+                  <tr key={item.id_codigo_detalle} className="border-b border-app-border/70">
                     <td className="py-3 pr-4 font-medium text-foreground">
-                      {item.codigo}
+                      {item.id_codigo_detalle}
                     </td>
-                    <td className="py-3 pr-4 text-foreground">{item.nombre}</td>
+                    <td className="py-3 pr-4 text-foreground">{item.nombre_codigo}</td>
                     <td className="py-3 pr-4">
                       <span
                         className={[
                           "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                          item.tipo === "COBRO"
+                          item.tipo_codigo === "COBRO"
                             ? "bg-blue-50 text-blue-700 border border-blue-100"
                             : "bg-purple-50 text-purple-700 border border-purple-100",
                         ].join(" ")}
                       >
-                        {item.tipo}
+                        {item.tipo_codigo}
                       </span>
+                    </td>
+                    <td className="py-3 pr-4 text-center text-app-muted font-medium">
+                      {item.prioridad_pago}
                     </td>
                     <td className="py-3 pr-4">
                       <span
                         className={[
                           "inline-flex rounded-full px-2 py-1 text-xs font-medium",
-                          item.activo
+                          item.estado_codigo === "ACTIVO"
                             ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                             : "bg-zinc-100 text-zinc-700 border border-app-border",
                         ].join(" ")}
                       >
-                        {item.activo ? "Activo" : "Inactivo"}
+                        {item.estado_codigo === "ACTIVO" ? "Activo" : "Inactivo"}
                       </span>
                     </td>
                     <td className="py-3 text-right">
@@ -277,7 +282,7 @@ export default function CodigosDetallePage() {
                           size="sm"
                           onClick={() => toggleActivo(item)}
                         >
-                          {item.activo ? "Desactivar" : "Activar"}
+                          {item.estado_codigo === "ACTIVO" ? "Desactivar" : "Activar"}
                         </Button>
                         <Button
                           variant="danger"
@@ -292,7 +297,7 @@ export default function CodigosDetallePage() {
                 ))}
                 {filtered.length === 0 ? (
                   <tr>
-                    <td className="py-6 text-sm text-app-muted" colSpan={5}>
+                    <td className="py-6 text-sm text-app-muted" colSpan={6}>
                       No hay códigos para mostrar.
                     </td>
                   </tr>
@@ -322,7 +327,7 @@ export default function CodigosDetallePage() {
             <span>
               ¿Seguro que quieres eliminar el código{" "}
               <strong className="text-foreground">
-                {deleteTarget.codigo} — {deleteTarget.nombre}
+                {deleteTarget.id_codigo_detalle} — {deleteTarget.nombre_codigo}
               </strong>
               ? Esta acción no se puede deshacer.
             </span>
@@ -337,10 +342,11 @@ export default function CodigosDetallePage() {
 }
 
 function CodigoFormModal({ title, initial, onClose, onSave }) {
-  const [codigo, setCodigo] = useState(initial?.codigo ?? "");
-  const [nombre, setNombre] = useState(initial?.nombre ?? "");
-  const [tipo, setTipo] = useState(initial?.tipo ?? "COBRO");
-  const [activo, setActivo] = useState(Boolean(initial?.activo ?? true));
+  const [id_codigo_detalle, setID] = useState(initial?.id_codigo_detalle ?? "");
+  const [nombre_codigo, setNombre] = useState(initial?.nombre_codigo ?? "");
+  const [tipo_codigo, setTipo] = useState(initial?.tipo_codigo ?? "COBRO");
+  const [prioridad_pago, setPrioridad] = useState(initial?.prioridad_pago ?? "0");
+  const [estado_codigo, setEstado] = useState(initial?.estado_codigo ?? "ACTIVO");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
 
@@ -349,7 +355,13 @@ function CodigoFormModal({ title, initial, onClose, onSave }) {
     setStatus("loading");
     setError(null);
     try {
-      await onSave({ codigo, nombre, tipo, activo });
+      await onSave({ 
+        id_codigo_detalle, 
+        nombre_codigo, 
+        tipo_codigo, 
+        prioridad_pago: Number(prioridad_pago),
+        estado_codigo 
+      });
     } catch (err) {
       setError(err?.message ?? "No se pudo guardar.");
       setStatus("idle");
@@ -365,13 +377,14 @@ function CodigoFormModal({ title, initial, onClose, onSave }) {
       <form onSubmit={submit} className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground">Código</label>
+            <label className="text-sm font-medium text-foreground">ID / Código</label>
             <input
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value)}
+              value={id_codigo_detalle}
+              onChange={(e) => setID(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               placeholder="Ej: MAT-PRE"
               required
+              disabled={Boolean(initial)}
             />
           </div>
           <div className="space-y-1">
@@ -379,7 +392,7 @@ function CodigoFormModal({ title, initial, onClose, onSave }) {
               Tipo
             </label>
             <select
-              value={tipo}
+              value={tipo_codigo}
               onChange={(e) => setTipo(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               required
@@ -394,9 +407,9 @@ function CodigoFormModal({ title, initial, onClose, onSave }) {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium text-foreground">Nombre</label>
+          <label className="text-sm font-medium text-foreground">Nombre / Descripción</label>
           <input
-            value={nombre}
+            value={nombre_codigo}
             onChange={(e) => setNombre(e.target.value)}
             className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
             placeholder="Ej: Matrícula Pregrado"
@@ -404,15 +417,29 @@ function CodigoFormModal({ title, initial, onClose, onSave }) {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            checked={activo}
-            onChange={(e) => setActivo(e.target.checked)}
-            className="h-4 w-4 rounded border-app-border text-app-accent focus:ring-app-accent/30"
-          />
-          Activo
-        </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Prioridad de Pago</label>
+            <input
+              type="number"
+              value={prioridad_pago}
+              onChange={(e) => setPrioridad(e.target.value)}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              placeholder="Ej: 1"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Estado</label>
+            <select
+              value={estado_codigo}
+              onChange={(e) => setEstado(e.target.value)}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent"
+            >
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Inactivo</option>
+            </select>
+          </div>
+        </div>
 
         {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -432,5 +459,3 @@ function CodigoFormModal({ title, initial, onClose, onSave }) {
     </Modal>
   );
 }
-
-

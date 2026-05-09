@@ -92,8 +92,8 @@ export default function CuentaCorrientePage() {
           >
             <option value="">-- Elige un estudiante --</option>
             {estudiantes.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.numeroDocumento} - {e.nombreCompleto}
+              <option key={e.id_estudiante} value={e.id_estudiante}>
+                {e.numero_identificacion} - {e.primer_nombre} {e.primer_apellido}
               </option>
             ))}
           </select>

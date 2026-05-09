@@ -13,10 +13,10 @@ export async function GET(request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const estudianteId = searchParams.get("estudianteId");
+  const id_estudiante = searchParams.get("estudianteId");
 
   return Response.json(
-    { items: MockDb.listRecaudos({ estudianteId }) },
+    { items: MockDb.listPagos({ id_estudiante }) },
     { status: 200 },
   );
 }
@@ -34,15 +34,26 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => null);
-  const { estudianteId, valor, metodo, cobroId } = body ?? {};
+  const { id_volante_matricula, valor_pagado, referencia_pago, canal_pago, id_codigo_detalle } = body ?? {};
 
-  if (!estudianteId || !valor) {
+  if (!id_volante_matricula || !valor_pagado) {
     return Response.json(
-      { message: "estudianteId and valor are required" },
+      { message: "id_volante_matricula and valor_pagado are required" },
       { status: 400 },
     );
   }
 
-  const created = MockDb.createRecaudo({ estudianteId, valor, metodo, cobroId });
-  return Response.json(created, { status: 201 });
+  try {
+    const created = MockDb.createPago({ 
+      id_volante_matricula, 
+      valor_pagado: Number(valor_pagado), 
+      referencia_pago, 
+      canal_pago,
+      id_codigo_detalle: id_codigo_detalle || "cd_003",
+      id_usuario: "user_admin" 
+    });
+    return Response.json(created, { status: 201 });
+  } catch (err) {
+    return Response.json({ message: err.message }, { status: 400 });
+  }
 }

@@ -2,6 +2,7 @@ import { MockDb } from "@/lib/mocks/db";
 
 export async function GET(request, { params }) {
   const { id } = await params;
+  console.log("API: FETCHING CC FOR STUDENT:", id);
   const useMocks =
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";

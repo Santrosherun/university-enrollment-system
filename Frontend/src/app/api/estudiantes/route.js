@@ -13,10 +13,10 @@ export async function GET(request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const programaId = searchParams.get("programaId");
+  const id_programa = searchParams.get("id_programa");
 
   return Response.json(
-    { items: MockDb.listEstudiantes({ programaId }) },
+    { items: MockDb.listEstudiantes({ id_programa }) },
     { status: 200 },
   );
 }
@@ -34,15 +34,25 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => null);
-  const { tipoDocumento, numeroDocumento, nombreCompleto, correo, telefono, programaId, periodoIngreso, activo } = body ?? {};
+  const { 
+    tipo_documento, numero_documento, 
+    primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+    correo_electronico, telefono_celular, direccion,
+    id_programa, fecha_ingreso, estado 
+  } = body ?? {};
 
-  if (!numeroDocumento || !nombreCompleto || !programaId) {
+  if (!numero_documento || !primer_nombre || !primer_apellido || !id_programa) {
     return Response.json(
-      { message: "numeroDocumento, nombreCompleto, programaId are required" },
+      { message: "numero_documento, primer_nombre, primer_apellido, id_programa are required" },
       { status: 400 },
     );
   }
 
-  const created = MockDb.createEstudiante({ tipoDocumento, numeroDocumento, nombreCompleto, correo, telefono, programaId, periodoIngreso, activo });
+  const created = MockDb.createEstudiante({ 
+    tipo_documento, numero_documento, 
+    primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+    correo_electronico, telefono_celular, direccion,
+    id_programa, fecha_ingreso, estado 
+  });
   return Response.json(created, { status: 201 });
 }

@@ -35,7 +35,7 @@ export default function ReportesPage() {
 
   if (!data && loading) return <div className="p-10 text-app-muted">Cargando reportes...</div>;
 
-  const maxFacturado = Math.max(...(data?.porPrograma.map(p => p.facturado) || [1]));
+  const maxFacturado = Math.max(...(data?.vista_facturacion?.por_programa?.map(p => p.facturado) || [1]));
 
   return (
     <div className="space-y-7">
@@ -65,24 +65,24 @@ export default function ReportesPage() {
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted">Total Facturado</div>
-          <div className="mt-1 text-2xl font-bold text-foreground">{formatCurrency(data?.summary.totalFacturado || 0)}</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted">Facturación Neta</div>
+          <div className="mt-1 text-2xl font-bold text-foreground">{formatCurrency(data?.vista_facturacion?.total_neto || 0)}</div>
         </div>
         <div className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-sm">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted">Total Recaudado</div>
-          <div className="mt-1 text-2xl font-bold text-emerald-600">{formatCurrency(data?.summary.totalRecaudado || 0)}</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted">Ingreso Real en Caja</div>
+          <div className="mt-1 text-2xl font-bold text-emerald-600">{formatCurrency(data?.vista_ingreso_real?.total_recaudado || 0)}</div>
         </div>
         <div className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-sm">
           <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted">Cartera Pendiente</div>
-          <div className="mt-1 text-2xl font-bold text-red-600">{formatCurrency(data?.summary.carteraPendiente || 0)}</div>
+          <div className="mt-1 text-2xl font-bold text-red-600">{formatCurrency(data?.vista_cartera?.total_pendiente || 0)}</div>
         </div>
         <div className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-sm">
           <div className="text-[10px] font-bold uppercase tracking-wider text-app-muted">Efectividad Recaudo</div>
-          <div className="mt-1 text-2xl font-bold text-app-accent">{(data?.summary.efectividad || 0).toFixed(1)}%</div>
+          <div className="mt-1 text-2xl font-bold text-app-accent">{(data?.vista_ingreso_real?.efectividad_porcentaje || 0).toFixed(1)}%</div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
             <div 
               className="h-full bg-app-accent transition-all duration-500" 
-              style={{ width: `${data?.summary.efectividad || 0}%` }}
+              style={{ width: `${data?.vista_ingreso_real?.efectividad_porcentaje || 0}%` }}
             />
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function ReportesPage() {
         <div className="rounded-2xl border border-app-border bg-app-surface p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-foreground mb-6">Facturación por Programa</h3>
           <div className="space-y-5">
-            {data?.porPrograma.map((prog) => (
+            {data?.vista_facturacion?.por_programa?.map((prog) => (
               <div key={prog.id} className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="font-medium text-app-muted">{prog.nombre}</span>
@@ -107,7 +107,7 @@ export default function ReportesPage() {
                 </div>
               </div>
             ))}
-            {data?.porPrograma.length === 0 && (
+            {(!data?.vista_facturacion?.por_programa || data.vista_facturacion.por_programa.length === 0) && (
               <div className="text-center py-10 text-xs text-app-muted">No hay datos para este periodo.</div>
             )}
           </div>
@@ -121,7 +121,7 @@ export default function ReportesPage() {
            <div className="max-w-xs">
              <h3 className="text-sm font-semibold text-foreground">Análisis de Cartera</h3>
              <p className="mt-1 text-xs text-app-muted">
-               El programa con mayor facturación en este periodo es <strong className="text-foreground">{data?.porPrograma[0]?.nombre || "---"}</strong>. 
+               El programa con mayor facturación en este periodo es <strong className="text-foreground">{data?.vista_facturacion?.por_programa[0]?.nombre || "---"}</strong>. 
                La efectividad de recaudo se mantiene estable.
              </p>
            </div>

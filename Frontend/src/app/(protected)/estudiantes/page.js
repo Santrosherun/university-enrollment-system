@@ -79,15 +79,19 @@ export default function EstudiantesPage() {
     const q = query.trim().toLowerCase();
     
     if (filterProg) {
-      list = list.filter((e) => e.programaId === filterProg);
+      list = list.filter((e) => e.id_programa === filterProg);
     }
     
     if (q) {
       list = list.filter(
-        (e) =>
-          e.nombreCompleto?.toLowerCase().includes(q) ||
-          e.numeroDocumento?.includes(q) ||
-          e.correo?.toLowerCase().includes(q)
+        (e) => {
+          const fullName = `${e.primer_nombre} ${e.segundo_nombre ?? ""} ${e.primer_apellido} ${e.segundo_apellido ?? ""}`.toLowerCase();
+          return (
+            fullName.includes(q) ||
+            e.numero_documento?.includes(q) ||
+            e.correo_electronico?.toLowerCase().includes(q)
+          );
+        }
       );
     }
     
@@ -124,8 +128,8 @@ export default function EstudiantesPage() {
   }, []);
 
   async function save(form) {
-    const isEdit = Boolean(editing?.id);
-    const url = isEdit ? `/api/estudiantes/${editing.id}` : "/api/estudiantes";
+    const isEdit = Boolean(editing?.id_estudiante);
+    const url = isEdit ? `/api/estudiantes/${editing.id_estudiante}` : "/api/estudiantes";
     const method = isEdit ? "PUT" : "POST";
 
     const res = await fetch(url, {
@@ -145,17 +149,18 @@ export default function EstudiantesPage() {
   }
 
   async function toggleActivo(item) {
-    const res = await fetch(`/api/estudiantes/${item.id}`, {
+    const nuevoEstado = item.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    const res = await fetch(`/api/estudiantes/${item.id_estudiante}`, {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ activo: !item.activo }),
+      body: JSON.stringify({ estado: nuevoEstado }),
     });
     if (!res.ok) return;
     await load();
   }
 
   async function removeEstudiante(item) {
-    const res = await fetch(`/api/estudiantes/${item.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/estudiantes/${item.id_estudiante}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) {
       const payload = await res.json().catch(() => null);
       throw new Error(payload?.message ?? "No se pudo eliminar el estudiante.");
@@ -163,7 +168,7 @@ export default function EstudiantesPage() {
     await load();
   }
 
-  const getProgName = (id) => programas.find((p) => p.id === id)?.nombre ?? "N/A";
+  const getProgName = (id) => programas.find((p) => p.id_programa === id)?.nombre_programa ?? "N/A";
 
   return (
     <div className="space-y-7">
@@ -210,8 +215,8 @@ export default function EstudiantesPage() {
             >
               <option value="">Todos los programas</option>
               {programas.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
+                <option key={p.id_programa} value={p.id_programa}>
+                  {p.nombre_programa}
                 </option>
               ))}
             </select>
@@ -242,61 +247,64 @@ export default function EstudiantesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item) => (
-                  <tr key={item.id} className="border-b border-app-border/70 hover:bg-zinc-50/50">
-                    <td className="py-3 pr-4 text-foreground">
-                      <div className="font-medium">{item.numeroDocumento}</div>
-                      <div className="text-xs text-app-muted">{item.tipoDocumento}</div>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <div className="font-medium text-foreground">{item.nombreCompleto}</div>
-                      <div className="text-xs text-app-muted">{item.correo}</div>
-                    </td>
-                    <td className="py-3 pr-4 text-foreground/90">
-                      {getProgName(item.programaId)}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span
-                        className={[
-                          "inline-flex rounded-full px-2 py-1 text-xs font-medium",
-                          item.activo
-                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                            : "bg-zinc-100 text-zinc-700 border border-app-border",
-                        ].join(" ")}
-                      >
-                        {item.activo ? "Activo" : "Inactivo"}
-                      </span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <div className="inline-flex flex-wrap justify-end gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setEditing(item);
-                            setOpen(true);
-                          }}
+                {filtered.map((item) => {
+                  const fullName = `${item.primer_nombre} ${item.segundo_nombre ?? ""} ${item.primer_apellido} ${item.segundo_apellido ?? ""}`;
+                  return (
+                    <tr key={item.id_estudiante} className="border-b border-app-border/70 hover:bg-zinc-50/50">
+                      <td className="py-3 pr-4 text-foreground">
+                        <div className="font-medium">{item.numero_documento}</div>
+                        <div className="text-xs text-app-muted">{item.tipo_documento}</div>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <div className="font-medium text-foreground">{fullName}</div>
+                        <div className="text-xs text-app-muted">{item.correo_electronico}</div>
+                      </td>
+                      <td className="py-3 pr-4 text-foreground/90">
+                        {getProgName(item.id_programa)}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span
+                          className={[
+                            "inline-flex rounded-full px-2 py-1 text-xs font-medium",
+                            item.estado === "ACTIVO"
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                              : "bg-zinc-100 text-zinc-700 border border-app-border",
+                          ].join(" ")}
                         >
-                          Editar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleActivo(item)}
-                        >
-                          {item.activo ? "Desactivar" : "Activar"}
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeleteTarget(item)}
-                        >
-                          Eliminar
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {item.estado === "ACTIVO" ? "Activo" : "Inactivo"}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <div className="inline-flex flex-wrap justify-end gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setEditing(item);
+                              setOpen(true);
+                            }}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleActivo(item)}
+                          >
+                            {item.estado === "ACTIVO" ? "Desactivar" : "Activar"}
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => setDeleteTarget(item)}
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {filtered.length === 0 ? (
                   <tr>
                     <td className="py-6 text-sm text-app-muted" colSpan={5}>
@@ -330,7 +338,7 @@ export default function EstudiantesPage() {
             <span>
               ¿Seguro que quieres eliminar a{" "}
               <strong className="text-foreground">
-                {deleteTarget.nombreCompleto}
+                {deleteTarget.primer_nombre} {deleteTarget.primer_apellido}
               </strong>
               ? Esta acción borrará su historial académico en el sistema.
             </span>
@@ -346,14 +354,18 @@ export default function EstudiantesPage() {
 
 function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
   const [formData, setFormData] = useState({
-    tipoDocumento: initial?.tipoDocumento ?? "CC",
-    numeroDocumento: initial?.numeroDocumento ?? "",
-    nombreCompleto: initial?.nombreCompleto ?? "",
-    correo: initial?.correo ?? "",
-    telefono: initial?.telefono ?? "",
-    programaId: initial?.programaId ?? "",
-    periodoIngreso: initial?.periodoIngreso ?? "2024-1",
-    activo: Boolean(initial?.activo ?? true),
+    tipo_documento: initial?.tipo_documento ?? "CC",
+    numero_documento: initial?.numero_documento ?? "",
+    primer_nombre: initial?.primer_nombre ?? "",
+    segundo_nombre: initial?.segundo_nombre ?? "",
+    primer_apellido: initial?.primer_apellido ?? "",
+    segundo_apellido: initial?.segundo_apellido ?? "",
+    correo_electronico: initial?.correo_electronico ?? "",
+    telefono_celular: initial?.telefono_celular ?? "",
+    direccion: initial?.direccion ?? "",
+    id_programa: initial?.id_programa ?? "",
+    fecha_ingreso: initial?.fecha_ingreso ?? new Date().toISOString().split("T")[0],
+    estado: initial?.estado ?? "ACTIVO",
   });
 
   const [status, setStatus] = useState("idle");
@@ -372,10 +384,10 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
   }
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }));
   };
 
@@ -390,8 +402,8 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">Tipo Doc.</label>
             <select
-              name="tipoDocumento"
-              value={formData.tipoDocumento}
+              name="tipo_documento"
+              value={formData.tipo_documento}
               onChange={handleChange}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               required
@@ -405,8 +417,8 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">Número Documento</label>
             <input
-              name="numeroDocumento"
-              value={formData.numeroDocumento}
+              name="numero_documento"
+              value={formData.numero_documento}
               onChange={handleChange}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               placeholder="Ej: 1001002003"
@@ -415,16 +427,52 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
           </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-foreground">Nombre Completo</label>
-          <input
-            name="nombreCompleto"
-            value={formData.nombreCompleto}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
-            placeholder="Ej: Juan Pérez García"
-            required
-          />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Primer Nombre</label>
+            <input
+              name="primer_nombre"
+              value={formData.primer_nombre}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              placeholder="Ej: Juan"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Segundo Nombre</label>
+            <input
+              name="segundo_nombre"
+              value={formData.segundo_nombre}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              placeholder="Ej: Carlos"
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Primer Apellido</label>
+            <input
+              name="primer_apellido"
+              value={formData.primer_apellido}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              placeholder="Ej: Pérez"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Segundo Apellido</label>
+            <input
+              name="segundo_apellido"
+              value={formData.segundo_apellido}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              placeholder="Ej: García"
+            />
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -432,8 +480,8 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
             <label className="text-sm font-medium text-foreground">Correo Electrónico</label>
             <input
               type="email"
-              name="correo"
-              value={formData.correo}
+              name="correo_electronico"
+              value={formData.correo_electronico}
               onChange={handleChange}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               placeholder="juan.perez@ejemplo.com"
@@ -442,8 +490,8 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">Teléfono</label>
             <input
-              name="telefono"
-              value={formData.telefono}
+              name="telefono_celular"
+              value={formData.telefono_celular}
               onChange={handleChange}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               placeholder="Ej: 3001234567"
@@ -455,42 +503,44 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">Programa</label>
             <select
-              name="programaId"
-              value={formData.programaId}
+              name="id_programa"
+              value={formData.id_programa}
               onChange={handleChange}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               required
             >
               <option value="">Selecciona un programa...</option>
               {programas.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
+                <option key={p.id_programa} value={p.id_programa}>
+                  {p.nombre_programa}
                 </option>
               ))}
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground">Periodo Ingreso</label>
+            <label className="text-sm font-medium text-foreground">Fecha Ingreso</label>
             <input
-              name="periodoIngreso"
-              value={formData.periodoIngreso}
+              type="date"
+              name="fecha_ingreso"
+              value={formData.fecha_ingreso}
               onChange={handleChange}
-              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground placeholder:text-app-muted/70 outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
-              placeholder="Ej: 2024-1"
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
             />
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            name="activo"
-            checked={formData.activo}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-foreground">Estado</label>
+          <select
+            name="estado"
+            value={formData.estado}
             onChange={handleChange}
-            className="h-4 w-4 rounded border-app-border text-app-accent focus:ring-app-accent/30"
-          />
-          Activo
-        </label>
+            className="rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm outline-none focus:border-app-accent"
+          >
+            <option value="ACTIVO">Activo</option>
+            <option value="INACTIVO">Inactivo</option>
+          </select>
+        </div>
 
         {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">

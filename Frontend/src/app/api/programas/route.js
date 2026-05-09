@@ -28,16 +28,16 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => null);
-  const { codigo, nombre, modalidad, activo } = body ?? {};
+  const { codigo_programa, nombre_programa, modalidad_programa, estado } = body ?? {};
 
-  if (!codigo || !nombre || !modalidad) {
+  if (!codigo_programa || !nombre_programa || !modalidad_programa) {
     return Response.json(
-      { message: "codigo, nombre, modalidad are required" },
+      { message: "codigo_programa, nombre_programa, modalidad_programa are required" },
       { status: 400 },
     );
   }
 
-  const created = MockDb.createPrograma({ codigo, nombre, modalidad, activo });
+  const created = MockDb.createPrograma({ codigo_programa, nombre_programa, modalidad_programa, estado });
   return Response.json(created, { status: 201 });
 }
 

@@ -19,19 +19,29 @@ export default function PagosPage() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
+  const [codigosDetalle, setCodigosDetalle] = useState([]);
 
   const [formData, setFormData] = useState({
-    cobroId: "",
-    valor: 0,
-    metodo: "TRANSFERENCIA",
+    id_volante_matricula: "",
+    id_codigo_detalle: "cd_003",
+    valor_pagado: 0,
+    referencia_pago: "",
+    canal_pago: "TRANSFERENCIA",
     fecha: new Date().toISOString().split("T")[0],
   });
 
-  async function loadEstudiantes() {
+  async function loadData() {
     try {
-      const res = await fetch("/api/estudiantes");
-      const json = await res.json();
-      setEstudiantes(json.items ?? []);
+      const [resEst, resCodes] = await Promise.all([
+        fetch("/api/estudiantes"),
+        fetch("/api/codigos-detalle")
+      ]);
+      const [dataEst, dataCodes] = await Promise.all([
+        resEst.json(),
+        resCodes.json()
+      ]);
+      setEstudiantes(dataEst.items ?? []);
+      setCodigosDetalle(dataCodes.items ?? []);
     } catch (err) {
       console.error(err);
     }
@@ -46,16 +56,24 @@ export default function PagosPage() {
     setLoading(true);
     try {
       const [resCobros, resBalance] = await Promise.all([
-        fetch(`/api/cobros?estudianteId=${estId}&estado=PENDIENTE`),
+        fetch(`/api/cobros?estudianteId=${estId}&estado=GENERADO`),
         fetch(`/api/estudiantes/${estId}/cuenta-corriente`)
       ]);
       
+      const checkRes = async (res) => {
+        const ct = res.headers.get("content-type");
+        if (!res.ok || !ct || !ct.includes("application/json")) {
+           return null;
+        }
+        return res.json();
+      };
+
       const [jsonCobros, jsonBalance] = await Promise.all([
-        resCobros.json(),
-        resBalance.json()
+        checkRes(resCobros),
+        checkRes(resBalance)
       ]);
 
-      setCobrosPendientes(jsonCobros.items ?? []);
+      setCobrosPendientes(jsonCobros?.items?.filter(c => c.estado === "GENERADO") ?? []);
       setBalanceData(jsonBalance);
     } catch (err) {
       console.error(err);
@@ -65,28 +83,28 @@ export default function PagosPage() {
   }
 
   useEffect(() => {
-    loadEstudiantes();
+    loadData();
   }, []);
 
   useEffect(() => {
     loadPendientes(selectedEst);
-    setFormData((prev) => ({ ...prev, cobroId: "", valor: 0 }));
+    setFormData((prev) => ({ ...prev, id_volante_matricula: "", valor_pagado: 0 }));
     setMessage(null);
   }, [selectedEst]);
 
   async function handleSelectCobro(e) {
     const id = e.target.value;
-    const cobro = cobrosPendientes.find((c) => c.id === id);
+    const cobro = cobrosPendientes.find((c) => c.id_volante === id);
     setFormData((prev) => ({
       ...prev,
-      cobroId: id,
-      valor: cobro ? cobro.total : 0,
+      id_volante_matricula: id,
+      valor_pagado: cobro ? cobro.total : 0,
     }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!selectedEst || !formData.valor) return;
+    if (!selectedEst || !formData.valor_pagado) return;
 
     setSubmitting(true);
     setMessage(null);
@@ -95,19 +113,23 @@ export default function PagosPage() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          estudianteId: selectedEst,
+          id_estudiante: selectedEst,
           ...formData,
         }),
       });
 
-      if (!res.ok) throw new Error("Error al procesar el pago.");
+      if (!res.ok) {
+         const payload = await res.json().catch(() => null);
+         throw new Error(payload?.message ?? "Error al procesar el pago.");
+      }
 
       setMessage({ type: "success", text: "¡Pago registrado exitosamente!" });
       await loadPendientes(selectedEst);
       setFormData({
-        cobroId: "",
-        valor: 0,
-        metodo: "TRANSFERENCIA",
+        id_volante_matricula: "",
+        valor_pagado: 0,
+        referencia_pago: "",
+        canal_pago: "TRANSFERENCIA",
         fecha: new Date().toISOString().split("T")[0],
       });
     } catch (err) {
@@ -142,8 +164,8 @@ export default function PagosPage() {
             >
               <option value="">-- Buscar estudiante --</option>
               {estudiantes.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.numeroDocumento} - {e.nombreCompleto}
+                <option key={e.id_estudiante} value={e.id_estudiante}>
+                  {e.numero_identificacion} - {e.primer_nombre} {e.primer_apellido}
                 </option>
               ))}
             </select>
@@ -154,24 +176,24 @@ export default function PagosPage() {
               <h3 className="text-sm font-semibold text-foreground">Deudas Pendientes</h3>
               {loading ? (
                 <div className="mt-4 text-xs text-app-muted">Consultando cartera...</div>
-              ) : balanceData && balanceData.summary.balance > 0 ? (
+              ) : (balanceData?.summary?.balance ?? 0) > 0 ? (
                 <div className="mt-4 space-y-3">
                   {cobrosPendientes.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between rounded-xl border border-app-border/60 bg-zinc-50 p-3">
+                    <div key={c.id_volante} className="flex items-center justify-between rounded-xl border border-app-border/60 bg-zinc-50 p-3">
                       <div>
-                        <div className="text-xs font-bold text-app-muted uppercase tracking-wider">{c.periodo}</div>
-                        <div className="text-sm font-medium text-foreground">Matrícula y servicios</div>
+                        <div className="text-xs font-bold text-app-muted uppercase tracking-wider">{c.id_periodo}</div>
+                        <div className="text-sm font-medium text-foreground">Volante {c.numero_volante}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-bold text-app-accent">{formatCurrency(c.total)}</div>
-                        <div className="text-[10px] text-emerald-600 font-medium italic">Pendiente</div>
+                        <div className="text-[10px] text-amber-600 font-medium italic">Pendiente</div>
                       </div>
                     </div>
                   ))}
                   <div className="pt-2 border-t border-app-border mt-4 flex justify-between items-end">
-                    <span className="text-xs font-semibold text-app-muted">TOTAL DEUDA REAL:</span>
+                    <span className="text-xs font-semibold text-app-muted">TOTAL DEUDA ACUMULADA:</span>
                     <span className="text-xl font-black text-foreground">
-                      {formatCurrency(balanceData.summary.balance)}
+                      {formatCurrency(balanceData?.summary?.balance ?? 0)}
                     </span>
                   </div>
                 </div>
@@ -192,20 +214,34 @@ export default function PagosPage() {
           <h3 className="text-sm font-semibold text-foreground">Registrar nuevo pago</h3>
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Concepto a Pagar</label>
+              <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Volante a Pagar</label>
               <select
-                value={formData.cobroId}
+                value={formData.id_volante_matricula}
                 onChange={handleSelectCobro}
                 disabled={!selectedEst || cobrosPendientes.length === 0}
                 className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-50"
                 required
               >
-                <option value="">-- Selecciona el cobro --</option>
-                <option value="LIBRE">Abono libre a cuenta</option>
+                <option value="">-- Selecciona el volante --</option>
                 {cobrosPendientes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    Cobro {c.periodo} ({formatCurrency(c.total)})
+                  <option key={c.id_volante} value={c.id_volante}>
+                    {c.numero_volante} ({formatCurrency(c.total)})
                   </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Concepto / Tipo de Movimiento</label>
+              <select
+                value={formData.id_codigo_detalle}
+                onChange={(e) => setFormData({ ...formData, id_codigo_detalle: e.target.value })}
+                disabled={!selectedEst}
+                className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-50"
+                required
+              >
+                {codigosDetalle.filter(c => c.tipo_codigo === "PAGO").map(c => (
+                  <option key={c.id_codigo_detalle} value={c.id_codigo_detalle}>{c.nombre_codigo}</option>
                 ))}
               </select>
             </div>
@@ -216,8 +252,8 @@ export default function PagosPage() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-app-muted">$</span>
                 <input
                   type="number"
-                  value={formData.valor}
-                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                  value={formData.valor_pagado}
+                  onChange={(e) => setFormData({ ...formData, valor_pagado: e.target.value })}
                   disabled={!selectedEst}
                   className="w-full rounded-xl border border-app-border bg-app-surface pl-7 pr-3 py-2.5 text-sm font-bold text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-50"
                   placeholder="0.00"
@@ -226,19 +262,31 @@ export default function PagosPage() {
               </div>
             </div>
 
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Referencia de Pago</label>
+              <input
+                value={formData.referencia_pago}
+                onChange={(e) => setFormData({ ...formData, referencia_pago: e.target.value })}
+                disabled={!selectedEst}
+                className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-50"
+                placeholder="Ej: TRANS-123456"
+                required
+              />
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Método</label>
+                <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Canal</label>
                 <select
-                  value={formData.metodo}
-                  onChange={(e) => setFormData({ ...formData, metodo: e.target.value })}
+                  value={formData.canal_pago}
+                  onChange={(e) => setFormData({ ...formData, canal_pago: e.target.value })}
                   disabled={!selectedEst}
                   className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-50"
                 >
                   <option value="TRANSFERENCIA">Transferencia</option>
                   <option value="EFECTIVO">Efectivo</option>
-                  <option value="TARJETA">Tarjeta de Crédito</option>
-                  <option value="CONVENIO">Convenio Bancario</option>
+                  <option value="PSE">PSE / Online</option>
+                  <option value="CONVENIO">Corresponsal</option>
                 </select>
               </div>
               <div className="space-y-1">
@@ -268,7 +316,7 @@ export default function PagosPage() {
               <Button
                 type="submit"
                 className="w-full py-4 text-base shadow-lg shadow-app-accent/20"
-                disabled={submitting || !selectedEst || !formData.valor}
+                disabled={submitting || !selectedEst || !formData.valor_pagado}
               >
                 {submitting ? "Procesando pago..." : "Confirmar y Registrar Pago"}
               </Button>

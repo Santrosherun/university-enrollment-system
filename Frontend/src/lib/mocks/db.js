@@ -6,669 +6,605 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-// NOTE: In-memory mock DB. In dev, hot-reload may reset data.
-// This is enough to build screens while backend is not ready.
+// NOTE: In-memory mock DB mirroring the PostgreSQL DDL 2026-10
 const defaultState = {
-  usuarios: [
-    { id: "user_001", nombre: "Administrador", email: "admin@ues.edu.co", password: "admin123", rol: "ADMIN" },
-    { id: "user_002", nombre: "Asistente de Tesorería", email: "asistente@ues.edu.co", password: "asistente123", rol: "ASISTENTE" },
+  usuario: [
+    { 
+      id_usuario: "user_001", username: "admin@ues.edu.co", password_hash: "admin123", 
+      id_persona: "per_001", id_rol: "1", estado: "ACTIVO", correo_notificacion: "admin@ues.edu.co",
+      fecha_creacion: new Date().toISOString()
+    }
   ],
-  programas: [
-    {
-      id: "prog_001",
-
-      codigo: "ADM",
-      nombre: "Administración de Empresas",
-      modalidad: "PRESENCIAL",
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "prog_002",
-      codigo: "ING-SIS",
-      nombre: "Ingeniería de Sistemas",
-      modalidad: "VIRTUAL",
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+  rol: [
+    { id_rol: "1", nombre_rol: "ADMIN", descripcion: "Acceso total", es_especial: true },
+    { id_rol: "2", nombre_rol: "SUPERVISOR", descripcion: "Gestión académica", es_especial: false },
+    { id_rol: "3", nombre_rol: "ASISTENTE", descripcion: "Caja y Atención", es_especial: false }
   ],
-  planes: [
-    {
-      id: "plan_001",
-      programaId: "prog_001",
-      codigo: "ADM-2024",
-      nombre: "Plan 2024",
-      version: "2024",
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+  persona: [
+    { 
+      id_persona: "per_001", tipo_documento: "CC", numero_documento: "123456", 
+      primer_nombre: "Admin", segundo_nombre: null, primer_apellido: "Sistemas", segundo_apellido: null,
+      correo_personal: "admin@personal.com", telefono_contacto: "555-0101", perfil_tecnico: true, estado: "ACTIVO" 
+    }
   ],
-  codigosDetalle: [
-    {
-      id: "cd_001",
-      codigo: "MAT-ORD",
-      nombre: "Matrícula Ordinaria",
-      tipo: "COBRO",
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "cd_002",
-      codigo: "SEG-EST",
-      nombre: "Seguro Estudiantil",
-      tipo: "COBRO",
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "cd_003",
-      codigo: "REC-CAJA",
-      nombre: "Recaudo Caja",
-      tipo: "PAGO",
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+  periodo_academico: [
+    { id_periodo: "2024-1", codigo_periodo: "2024-1", numero_periodo: 1, anio: 2024, fecha_inicio: "2024-02-01", fecha_fin: "2024-06-30", estado: "ACTIVO" }
   ],
-  reglasCobro: [
-    {
-      id: "rc_001",
-      periodo: "2024-1",
-      programaId: "prog_001",
-      codigoDetalleId: "cd_001",
-      valor: 4500000,
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "rc_002",
-      periodo: "2024-1",
-      programaId: "prog_001",
-      codigoDetalleId: "cd_002",
-      valor: 85000,
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+  programa_academico: [
+    { id_programa: "prog_001", codigo_programa: "ADM", nombre_programa: "Administración de Empresas", duracion_semestres: 10, modalidad_programa: "PRESENCIAL", nivel_formacion: "PREGRADO", estado: "ACTIVO" },
+    { id_programa: "prog_002", codigo_programa: "ING-SIS", nombre_programa: "Ingeniería de Sistemas", duracion_semestres: 10, modalidad_programa: "VIRTUAL", nivel_formacion: "PREGRADO", estado: "ACTIVO" },
   ],
-  estudiantes: [
+  estudiante: [
     {
-      id: "est_001",
-      tipoDocumento: "CC",
-      numeroDocumento: "1001002003",
-      nombreCompleto: "Juan Pérez García",
-      correo: "juan.perez@universidad.edu.co",
-      telefono: "3001234567",
-      programaId: "prog_001",
-      periodoIngreso: "2024-1",
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "est_002",
-      tipoDocumento: "CC",
-      numeroDocumento: "1002003004",
-      nombreCompleto: "María López Ruíz",
-      correo: "maria.lopez@universidad.edu.co",
-      telefono: "3119876543",
-      programaId: "prog_002",
-      periodoIngreso: "2024-1",
-      activo: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+      id_estudiante: "est_001", tipo_documento: "CC", numero_documento: "1001002003",
+      primer_nombre: "Juan", segundo_nombre: null, primer_apellido: "Pérez", segundo_apellido: "García",
+      correo_electronico: "juan.perez@universidad.edu.co", telefono_celular: "3001234567",
+      id_programa: "prog_001", fecha_ingreso: "2024-01-15", direccion: "Calle 123", estado: "ACTIVO"
+    }
   ],
-  cobros: [
-    {
-      id: "cb_001",
-      estudianteId: "est_001",
-      periodo: "2024-1",
-      items: [
-        { codigoDetalleId: "cd_001", valor: 4500000 },
-        { codigoDetalleId: "cd_002", valor: 85000 },
-      ],
-      total: 4585000,
-      estado: "PENDIENTE",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+  plan_estudio: [
+    { id_programa: "prog_001", id_asignatura: "asig_001", semestre: 1, es_obligatoria: true },
+    { id_programa: "prog_001", id_asignatura: "asig_002", semestre: 1, es_obligatoria: true },
   ],
-  recaudos: [
-    {
-      id: "rec_001",
-      estudianteId: "est_002",
-      cobroId: null, // Pago libre o abono a cuenta
-      valor: 500000,
-      fecha: new Date().toISOString(),
-      metodo: "TRANSFERENCIA",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+  asignatura: [
+    { id_asignatura: "asig_001", codigo_asignatura: "MAT-1", nombre_asignatura: "Matemáticas I", tipo_asignatura: "OBLIGATORIA", creditos: 3, estado: "ACTIVA" },
+    { id_asignatura: "asig_002", codigo_asignatura: "ADM-1", nombre_asignatura: "Introducción a la Admin", tipo_asignatura: "OBLIGATORIA", creditos: 2, estado: "ACTIVA" },
   ],
+  codigo_detalle: [
+    { id_codigo_detalle: "cd_001", nombre_codigo: "Matrícula Ordinaria", tipo_codigo: "COBRO", prioridad_pago: 1, estado_codigo: "ACTIVO" },
+    { id_codigo_detalle: "cd_002", nombre_codigo: "Seguro Estudiantil", tipo_codigo: "COBRO", prioridad_pago: 2, estado_codigo: "ACTIVO" },
+    { id_codigo_detalle: "cd_003", nombre_codigo: "Pago Matrícula", tipo_codigo: "PAGO", prioridad_pago: 0, estado_codigo: "ACTIVO" },
+    { id_codigo_detalle: "cd_004", nombre_codigo: "Descuento Académico", tipo_codigo: "PAGO", prioridad_pago: 0, estado_codigo: "ACTIVO" },
+  ],
+  regla_cobro: [
+    { modalidad_cobro: "GLOBAL", id_periodo: "2024-1", id_programa: "prog_001", valor_global: 4500000, valor_credito: null, estado: "ACTIVA" }
+  ],
+  cuenta_corriente: [],
+  volante_matricula: [],
+  detalle_volante: [],
+  pago: [],
+  movimiento: []
 };
 
 const state = globalThis.__uesMockDb ?? defaultState;
-
-// Asegurar que todas las propiedades existan si vienen de una versión anterior
-for (const key in defaultState) {
-  if (state[key] === undefined) {
-    state[key] = clone(defaultState[key]);
-  }
-}
-
 globalThis.__uesMockDb = state;
 
-
-
-
 export const MockDb = {
-  listProgramas() {
-    return clone(state.programas);
-  },
-  getPrograma(id) {
-    return clone(state.programas.find((p) => p.id === id) ?? null);
-  },
-  createPrograma(input) {
-    const now = new Date().toISOString();
-    const record = {
-      id: makeId("prog"),
-      codigo: String(input.codigo ?? "").trim().toUpperCase(),
-      nombre: String(input.nombre ?? "").trim(),
-      modalidad: String(input.modalidad ?? "PRESENCIAL").trim().toUpperCase(),
-      activo: Boolean(input.activo ?? true),
-      createdAt: now,
-      updatedAt: now,
-    };
-    state.programas.unshift(record);
-    return clone(record);
-  },
-  updatePrograma(id, patch) {
-    const idx = state.programas.findIndex((p) => p.id === id);
-    if (idx === -1) return null;
-    const now = new Date().toISOString();
-    const prev = state.programas[idx];
-    const next = {
-      ...prev,
-      codigo:
-        patch.codigo !== undefined
-          ? String(patch.codigo).trim().toUpperCase()
-          : prev.codigo,
-      nombre: patch.nombre !== undefined ? String(patch.nombre).trim() : prev.nombre,
-      modalidad:
-        patch.modalidad !== undefined
-          ? String(patch.modalidad).trim().toUpperCase()
-          : prev.modalidad,
-      activo: patch.activo !== undefined ? Boolean(patch.activo) : prev.activo,
-      updatedAt: now,
-    };
-    state.programas[idx] = next;
-    return clone(next);
-  },
-  /** Elimina el programa y todos los planes asociados (mock). */
-  deletePrograma(id) {
-    const idx = state.programas.findIndex((p) => p.id === id);
-    if (idx === -1) return false;
-    state.programas.splice(idx, 1);
-    state.planes = state.planes.filter((p) => p.programaId !== id);
-    return true;
-  },
+  getState() { return state; },
 
-  listPlanes({ programaId } = {}) {
-    const list = state.planes;
-    const filtered = programaId ? list.filter((p) => p.programaId === programaId) : list;
-    return clone(filtered);
-  },
-  getPlan(id) {
-    return clone(state.planes.find((p) => p.id === id) ?? null);
-  },
-  createPlan(input) {
-    const now = new Date().toISOString();
-    const record = {
-      id: makeId("plan"),
-      programaId: String(input.programaId ?? "").trim(),
-      codigo: String(input.codigo ?? "").trim().toUpperCase(),
-      nombre: String(input.nombre ?? "").trim(),
-      version: String(input.version ?? "").trim(),
-      activo: Boolean(input.activo ?? true),
-      createdAt: now,
-      updatedAt: now,
-    };
-    state.planes.unshift(record);
-    return clone(record);
-  },
-  updatePlan(id, patch) {
-    const idx = state.planes.findIndex((p) => p.id === id);
-    if (idx === -1) return null;
-    const now = new Date().toISOString();
-    const prev = state.planes[idx];
-    const next = {
-      ...prev,
-      programaId:
-        patch.programaId !== undefined ? String(patch.programaId).trim() : prev.programaId,
-      codigo:
-        patch.codigo !== undefined
-          ? String(patch.codigo).trim().toUpperCase()
-          : prev.codigo,
-      nombre: patch.nombre !== undefined ? String(patch.nombre).trim() : prev.nombre,
-      version: patch.version !== undefined ? String(patch.version).trim() : prev.version,
-      activo: patch.activo !== undefined ? Boolean(patch.activo) : prev.activo,
-      updatedAt: now,
-    };
-    state.planes[idx] = next;
-    return clone(next);
-  },
-
-  listCodigosDetalle({ tipo } = {}) {
-    const list = state.codigosDetalle;
-    const filtered = tipo ? list.filter((c) => c.tipo === tipo) : list;
-    return clone(filtered);
-  },
-  getCodigoDetalle(id) {
-    return clone(state.codigosDetalle.find((c) => c.id === id) ?? null);
-  },
-  createCodigoDetalle(input) {
-    const now = new Date().toISOString();
-    const record = {
-      id: makeId("cd"),
-      codigo: String(input.codigo ?? "").trim().toUpperCase(),
-      nombre: String(input.nombre ?? "").trim(),
-      tipo: String(input.tipo ?? "COBRO").trim().toUpperCase(),
-      activo: Boolean(input.activo ?? true),
-      createdAt: now,
-      updatedAt: now,
-    };
-    state.codigosDetalle.unshift(record);
-    return clone(record);
-  },
-  updateCodigoDetalle(id, patch) {
-    const idx = state.codigosDetalle.findIndex((c) => c.id === id);
-    if (idx === -1) return null;
-    const now = new Date().toISOString();
-    const prev = state.codigosDetalle[idx];
-    const next = {
-      ...prev,
-      codigo:
-        patch.codigo !== undefined
-          ? String(patch.codigo).trim().toUpperCase()
-          : prev.codigo,
-      nombre: patch.nombre !== undefined ? String(patch.nombre).trim() : prev.nombre,
-      tipo:
-        patch.tipo !== undefined
-          ? String(patch.tipo).trim().toUpperCase()
-          : prev.tipo,
-      activo: patch.activo !== undefined ? Boolean(patch.activo) : prev.activo,
-      updatedAt: now,
-    };
-    state.codigosDetalle[idx] = next;
-    return clone(next);
-  },
-  deleteCodigoDetalle(id) {
-    const idx = state.codigosDetalle.findIndex((c) => c.id === id);
-    if (idx === -1) return false;
-    state.codigosDetalle.splice(idx, 1);
-    return true;
-  },
-
-  listReglasCobro({ periodo, programaId, codigoDetalleId } = {}) {
-    let list = state.reglasCobro;
-    if (periodo) list = list.filter((r) => r.periodo === periodo);
-    if (programaId) list = list.filter((r) => r.programaId === programaId);
-    if (codigoDetalleId) list = list.filter((r) => r.codigoDetalleId === codigoDetalleId);
-    return clone(list);
-  },
-  getReglaCobro(id) {
-    return clone(state.reglasCobro.find((r) => r.id === id) ?? null);
-  },
-  createReglaCobro(input) {
-    const now = new Date().toISOString();
-    const record = {
-      id: makeId("rc"),
-      periodo: String(input.periodo ?? "").trim(),
-      programaId: String(input.programaId ?? "").trim(),
-      codigoDetalleId: String(input.codigoDetalleId ?? "").trim(),
-      valor: Number(input.valor ?? 0),
-      activo: Boolean(input.activo ?? true),
-      createdAt: now,
-      updatedAt: now,
-    };
-    state.reglasCobro.unshift(record);
-    return clone(record);
-  },
-  updateReglaCobro(id, patch) {
-    const idx = state.reglasCobro.findIndex((r) => r.id === id);
-    if (idx === -1) return null;
-    const now = new Date().toISOString();
-    const prev = state.reglasCobro[idx];
-    const next = {
-      ...prev,
-      periodo: patch.periodo !== undefined ? String(patch.periodo).trim() : prev.periodo,
-      programaId:
-        patch.programaId !== undefined ? String(patch.programaId).trim() : prev.programaId,
-      codigoDetalleId:
-        patch.codigoDetalleId !== undefined
-          ? String(patch.codigoDetalleId).trim()
-          : prev.codigoDetalleId,
-      valor: patch.valor !== undefined ? Number(patch.valor) : prev.valor,
-      activo: patch.activo !== undefined ? Boolean(patch.activo) : prev.activo,
-      updatedAt: now,
-    };
-    state.reglasCobro[idx] = next;
-    return clone(next);
-  },
-  deleteReglaCobro(id) {
-    const idx = state.reglasCobro.findIndex((r) => r.id === id);
-    if (idx === -1) return false;
-    state.reglasCobro.splice(idx, 1);
-    return true;
-  },
-
-  listEstudiantes({ programaId } = {}) {
-    let list = state.estudiantes;
-    if (programaId) list = list.filter((e) => e.programaId === programaId);
-    return clone(list);
-  },
-  getEstudiante(id) {
-    return clone(state.estudiantes.find((e) => e.id === id) ?? null);
-  },
-  createEstudiante(input) {
-    const now = new Date().toISOString();
-    const record = {
-      id: makeId("est"),
-      tipoDocumento: String(input.tipoDocumento ?? "CC").trim().toUpperCase(),
-      numeroDocumento: String(input.numeroDocumento ?? "").trim(),
-      nombreCompleto: String(input.nombreCompleto ?? "").trim(),
-      correo: String(input.correo ?? "").trim().toLowerCase(),
-      telefono: String(input.telefono ?? "").trim(),
-      programaId: String(input.programaId ?? "").trim(),
-      periodoIngreso: String(input.periodoIngreso ?? "").trim(),
-      activo: Boolean(input.activo ?? true),
-      createdAt: now,
-      updatedAt: now,
-    };
-    state.estudiantes.unshift(record);
-    return clone(record);
-  },
-  updateEstudiante(id, patch) {
-    const idx = state.estudiantes.findIndex((e) => e.id === id);
-    if (idx === -1) return null;
-    const now = new Date().toISOString();
-    const prev = state.estudiantes[idx];
-    const next = {
-      ...prev,
-      tipoDocumento: patch.tipoDocumento !== undefined ? String(patch.tipoDocumento).trim().toUpperCase() : prev.tipoDocumento,
-      numeroDocumento: patch.numeroDocumento !== undefined ? String(patch.numeroDocumento).trim() : prev.numeroDocumento,
-      nombreCompleto: patch.nombreCompleto !== undefined ? String(patch.nombreCompleto).trim() : prev.nombreCompleto,
-      correo: patch.correo !== undefined ? String(patch.correo).trim().toLowerCase() : prev.correo,
-      telefono: patch.telefono !== undefined ? String(patch.telefono).trim() : prev.telefono,
-      programaId: patch.programaId !== undefined ? String(patch.programaId).trim() : prev.programaId,
-      periodoIngreso: patch.periodoIngreso !== undefined ? String(patch.periodoIngreso).trim() : prev.periodoIngreso,
-      activo: patch.activo !== undefined ? Boolean(patch.activo) : prev.activo,
-      updatedAt: now,
-    };
-    state.estudiantes[idx] = next;
-    return clone(next);
-  },
-  deleteEstudiante(id) {
-    const idx = state.estudiantes.findIndex((e) => e.id === id);
-    if (idx === -1) return false;
-    state.estudiantes.splice(idx, 1);
-    return true;
-  },
-
-  listCobros({ estudianteId, periodo, estado } = {}) {
-    let list = state.cobros;
-    if (estudianteId) list = list.filter((c) => c.estudianteId === estudianteId);
-    if (periodo) list = list.filter((c) => c.periodo === periodo);
-    if (estado) list = list.filter((c) => c.estado === estado);
-    return clone(list);
-  },
-  getCobro(id) {
-    return clone(state.cobros.find((c) => c.id === id) ?? null);
-  },
-  /** Genera un cobro para un estudiante basado en las reglas del periodo. */
-  generateCobro(estudianteId, periodo) {
-    const estudiante = state.estudiantes.find((e) => e.id === estudianteId);
-    if (!estudiante) throw new Error("Estudiante no encontrado.");
-
-    // Buscar reglas para el programa del estudiante y el periodo
-    const reglas = state.reglasCobro.filter(
-      (r) => r.programaId === estudiante.programaId && r.periodo === periodo && r.activo,
-    );
-
-    if (reglas.length === 0) {
-      throw new Error(`No hay reglas de cobro configuradas para el programa ${estudiante.programaId} en el periodo ${periodo}.`);
-    }
-
-    // Verificar si ya existe un cobro pendiente o pagado para este periodo
-    const existe = state.cobros.find(
-      (c) => c.estudianteId === estudianteId && c.periodo === periodo && c.estado !== "ANULADO",
-    );
-    if (existe) {
-      throw new Error(`El estudiante ya tiene un cobro generado para el periodo ${periodo}.`);
-    }
-
-    const now = new Date().toISOString();
-    const items = reglas.map((r) => ({
-      codigoDetalleId: r.codigoDetalleId,
-      valor: r.valor,
-    }));
-    const total = items.reduce((acc, curr) => acc + curr.valor, 0);
-
-    const record = {
-      id: makeId("cb"),
-      estudianteId,
-      periodo,
-      items,
-      total,
-      estado: "PENDIENTE",
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    state.cobros.unshift(record);
-    return clone(record);
-  },
-  /** Generación masiva por programa y periodo. */
-  generateCobrosMasivos(programaId, periodo) {
-    const estudiantes = state.estudiantes.filter(
-      (e) => e.programaId === programaId && e.activo,
-    );
-    let count = 0;
-    const errors = [];
-
-    estudiantes.forEach((e) => {
-      try {
-        this.generateCobro(e.id, periodo);
-        count++;
-      } catch (err) {
-        errors.push({ estudiante: e.nombreCompleto, error: err.message });
-      }
-    });
-
-    return { count, errors };
-  },
-  deleteCobro(id) {
-    const idx = state.cobros.findIndex((c) => c.id === id);
-    if (idx === -1) return false;
-    // En un sistema real, no se borran cobros, se anulan.
-    // Para el mock, permitimos borrar.
-    state.cobros.splice(idx, 1);
-    return true;
-  },
-
-  listRecaudos({ estudianteId } = {}) {
-    const list = estudianteId
-      ? state.recaudos.filter((r) => r.estudianteId === estudianteId)
-      : state.recaudos;
-    return clone(list);
-  },
-
-  /** Obtiene el extracto de movimientos y balance de un estudiante. */
-  getCuentaCorriente(estudianteId) {
-    const cargos = state.cobros
-      .filter((c) => c.estudianteId === estudianteId && c.estado !== "ANULADO")
-      .map((c) => ({
-        id: c.id,
-        tipo: "CARGO",
-        descripcion: `Cobro Matrícula - ${c.periodo}`,
-        valor: c.total,
-        fecha: c.createdAt,
-      }));
-
-    const abonos = state.recaudos
-      .filter((r) => r.estudianteId === estudianteId)
-      .map((r) => ({
-        id: r.id,
-        tipo: "ABONO",
-        descripcion: `Pago Recibido (${r.metodo})`,
-        valor: r.valor,
-        fecha: r.fecha,
-      }));
-
-    const movimientos = [...cargos, ...abonos].sort(
-      (a, b) => new Date(b.fecha) - new Date(a.fecha),
-    );
-
-    const totalCargos = cargos.reduce((acc, curr) => acc + curr.valor, 0);
-    const totalAbonos = abonos.reduce((acc, curr) => acc + curr.valor, 0);
-    const balance = totalCargos - totalAbonos;
-
-    return {
-      movimientos,
-      summary: {
-        totalCargos,
-        totalAbonos,
-        balance,
-      },
-    };
-  },
-
-  createRecaudo(input) {
-    const now = new Date().toISOString();
-    const record = {
-      id: makeId("rec"),
-      estudianteId: String(input.estudianteId ?? "").trim(),
-      cobroId: input.cobroId ? String(input.cobroId).trim() : null,
-      valor: Number(input.valor ?? 0),
-      fecha: input.fecha || now,
-      metodo: String(input.metodo ?? "EFECTIVO").trim().toUpperCase(),
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    state.recaudos.unshift(record);
-
-    // Si el pago está asociado a un cobro, marcar el cobro como PAGADO
-    if (record.cobroId) {
-      const cobroIdx = state.cobros.findIndex((c) => c.id === record.cobroId);
-      if (cobroIdx !== -1) {
-        state.cobros[cobroIdx].estado = "PAGADO";
-        state.cobros[cobroIdx].updatedAt = now;
-      }
-    }
-
-    return clone(record);
-  },
-
-  getReportesFinancieros(periodo = "") {
-    const cobros = periodo 
-      ? state.cobros.filter(c => c.periodo === periodo && c.estado !== "ANULADO")
-      : state.cobros.filter(c => c.estado !== "ANULADO");
-    
-    const recaudos = periodo
-      ? state.recaudos.filter(r => {
-          if (!r.cobroId) return false; // Por simplicidad, solo recaudos con cobroId
-          const c = state.cobros.find(cb => cb.id === r.cobroId);
-          return c && c.periodo === periodo;
-        })
-      : state.recaudos;
-
-    const totalFacturado = cobros.reduce((acc, c) => acc + c.total, 0);
-    const totalRecaudado = recaudos.reduce((acc, r) => acc + r.valor, 0);
-    const carteraPendiente = totalFacturado - totalRecaudado;
-
-    // Reporte por Programa
-    const porPrograma = state.programas.map(prog => {
-      const cobrosProg = cobros.filter(c => {
-        const est = state.estudiantes.find(e => e.id === c.estudianteId);
-        return est && est.programaId === prog.id;
-      });
-      const facturado = cobrosProg.reduce((acc, c) => acc + c.total, 0);
-      
-      return {
-        id: prog.id,
-        nombre: prog.nombre,
-        facturado
-      };
-    }).sort((a, b) => b.facturado - a.facturado);
-
-    return {
-      summary: {
-        totalFacturado,
-        totalRecaudado,
-        carteraPendiente,
-        efectividad: totalFacturado > 0 ? (totalRecaudado / totalFacturado) * 100 : 0
-      },
-      porPrograma
-    };
-  },
-
-  login(email, password) {
-    const user = state.usuarios.find(u => u.email === email && u.password === password);
+  login(username, password) {
+    const user = state.usuario.find(u => u.username === username && u.password_hash === password);
     if (!user) return null;
-
-    // Retornamos una copia sin el password
-    const sessionUser = clone(user);
-    delete sessionUser.password;
-    
+    const persona = state.persona.find(p => p.id_persona === user.id_persona);
+    const rol = state.rol.find(r => r.id_rol === user.id_rol);
     return {
-      user: sessionUser,
-      token: `mock_jwt_token_${user.id}_${Date.now()}`
+      user: {
+        id: user.id_usuario,
+        nombre: persona ? `${persona.primer_nombre} ${persona.primer_apellido || ""}`.trim() : "Usuario",
+        username: user.username,
+        rol: rol?.nombre_rol || "ASISTENTE"
+      },
+      token: `mock_jwt_${user.id_usuario}`
     };
-  },
-
-  getUserById(id) {
-    const user = state.usuarios.find(u => u.id === id);
-    if (!user) return null;
-    const sessionUser = clone(user);
-    delete sessionUser.password;
-    return sessionUser;
   },
 
   listUsuarios() {
-    return state.usuarios.map(u => {
-      const copy = clone(u);
-      delete copy.password;
-      return copy;
+    return state.usuario.map(u => {
+      const persona = state.persona.find(p => p.id_persona === u.id_persona);
+      const rol = state.rol.find(r => r.id_rol === u.id_rol);
+      return {
+        id: u.id_usuario,
+        nombre: persona ? `${persona.primer_nombre} ${persona.primer_apellido || ""}`.trim() : "Usuario",
+        email: u.username,
+        rol: rol ? rol.nombre_rol : "ASISTENTE"
+      };
     });
   },
 
   createUser(data) {
-    const newUser = {
-      ...data,
-      id: makeId("user"),
-      createdAt: new Date().toISOString()
+    const id_persona = makeId("per");
+    const parts = (data.nombre || "Usuario Nuevo").trim().split(" ");
+    const primer_nombre = parts[0];
+    const primer_apellido = parts.slice(1).join(" ") || "";
+    
+    state.persona.push({
+      id_persona,
+      primer_nombre,
+      primer_apellido,
+      correo_personal: data.email,
+      estado: "ACTIVO"
+    });
+
+    let id_rol = "3";
+    if (data.rol === "ADMIN") id_rol = "1";
+    if (data.rol === "SUPERVISOR") id_rol = "2";
+
+    const record = {
+      id_usuario: makeId("user"),
+      username: data.email,
+      password_hash: data.password || "123456",
+      id_persona,
+      id_rol,
+      estado: "ACTIVO"
     };
-    state.usuarios.push(newUser);
-    const copy = clone(newUser);
-    delete copy.password;
-    return copy;
+    state.usuario.push(record);
+    return this.listUsuarios().find(u => u.id === record.id_usuario);
   },
 
   updateUser(id, data) {
-    const idx = state.usuarios.findIndex(u => u.id === id);
+    const user = state.usuario.find(u => u.id_usuario === id);
+    if (!user) return null;
+    
+    let id_rol = "3";
+    if (data.rol === "ADMIN") id_rol = "1";
+    if (data.rol === "SUPERVISOR") id_rol = "2";
+    user.id_rol = id_rol;
+    user.username = data.email;
+
+    const persona = state.persona.find(p => p.id_persona === user.id_persona);
+    if (persona) {
+      const parts = (data.nombre || "").trim().split(" ");
+      persona.primer_nombre = parts[0] || persona.primer_nombre;
+      persona.primer_apellido = parts.slice(1).join(" ") || persona.primer_apellido;
+      persona.correo_personal = data.email;
+    }
+
+    return this.listUsuarios().find(u => u.id === id);
+  },
+
+  listProgramas() { return clone(state.programa_academico); },
+  listPeriodos() { return clone(state.periodo_academico); },
+  getPrograma(id) {
+    const item = state.programa_academico.find(p => p.id_programa === id);
+    return item ? clone(item) : null;
+  },
+
+  createPrograma(input) {
+    const record = {
+      id_programa: makeId("prog"),
+      codigo_programa: String(input.codigo_programa ?? "").trim().toUpperCase(),
+      nombre_programa: String(input.nombre_programa ?? "").trim(),
+      duracion_semestres: Number(input.duracion_semestres ?? 10),
+      modalidad_programa: String(input.modalidad_programa ?? "PRESENCIAL").trim().toUpperCase(),
+      nivel_formacion: String(input.nivel_formacion ?? "PREGRADO").trim().toUpperCase(),
+      estado: String(input.estado ?? "ACTIVO").trim().toUpperCase()
+    };
+    state.programa_academico.push(record);
+    return clone(record);
+  },
+
+  updatePrograma(id, patch) {
+    const idx = state.programa_academico.findIndex(p => p.id_programa === id);
     if (idx === -1) return null;
-    state.usuarios[idx] = { ...state.usuarios[idx], ...data };
-    const copy = clone(state.usuarios[idx]);
-    delete copy.password;
-    return copy;
+    state.programa_academico[idx] = { ...state.programa_academico[idx], ...patch };
+    return clone(state.programa_academico[idx]);
+  },
+
+  deletePrograma(id) {
+    const idx = state.programa_academico.findIndex(p => p.id_programa === id);
+    if (idx === -1) return false;
+    state.programa_academico.splice(idx, 1);
+    return true;
+  },
+
+  listEstudiantes() { 
+    return state.estudiante.map(e => {
+      const prog = state.programa_academico.find(p => p.id_programa === e.id_programa);
+      return { ...clone(e), programa_nombre: prog?.nombre_programa };
+    });
+  },
+
+  getEstudiante(id) {
+    return clone(state.estudiante.find(e => e.id_estudiante === id));
+  },
+
+  createEstudiante(input) {
+    const record = {
+      ...input,
+      id_estudiante: makeId("est"),
+      fecha_ingreso: input.fecha_ingreso || new Date().toISOString(),
+      estado: input.estado || "ACTIVO"
+    };
+    state.estudiante.push(record);
+    return clone(record);
+  },
+
+  updateEstudiante(id, data) {
+    const idx = state.estudiante.findIndex(e => e.id_estudiante === id);
+    if (idx === -1) return null;
+    state.estudiante[idx] = { ...state.estudiante[idx], ...data };
+    return clone(state.estudiante[idx]);
+  },
+
+  deleteEstudiante(id) {
+    const idx = state.estudiante.findIndex(e => e.id_estudiante === id);
+    if (idx === -1) return false;
+    state.estudiante.splice(idx, 1);
+    return true;
+  },
+
+  createCodigoDetalle(input) {
+    const record = {
+      id_codigo_detalle: makeId("cd"),
+      nombre_codigo: input.nombre_codigo,
+      tipo_codigo: input.tipo_codigo,
+      prioridad_pago: Number(input.prioridad_pago || 0),
+      estado_codigo: input.estado_codigo || "ACTIVO"
+    };
+    state.codigo_detalle.push(record);
+    return clone(record);
+  },
+
+  listCodigosDetalle() { return clone(state.codigo_detalle); },
+
+  listAsignaturas() { return clone(state.asignatura); },
+
+  createAsignatura(input) {
+    const record = {
+      id_asignatura: makeId("asig"),
+      codigo_asignatura: String(input.codigo_asignatura ?? "").trim().toUpperCase(),
+      nombre_asignatura: String(input.nombre_asignatura ?? "").trim(),
+      tipo_asignatura: String(input.tipo_asignatura ?? "OBLIGATORIA").toUpperCase(),
+      creditos: Number(input.creditos ?? 3),
+      estado: String(input.estado ?? "ACTIVA").toUpperCase()
+    };
+    state.asignatura.push(record);
+    return clone(record);
+  },
+
+  getAsignatura(id) {
+    return clone(state.asignatura.find(a => a.id_asignatura === id));
+  },
+
+  updateAsignatura(id, data) {
+    const idx = state.asignatura.findIndex(a => a.id_asignatura === id);
+    if (idx === -1) return null;
+    const cleanData = { ...data };
+    if (cleanData.creditos !== undefined) cleanData.creditos = Number(cleanData.creditos);
+    state.asignatura[idx] = { ...state.asignatura[idx], ...cleanData };
+    return clone(state.asignatura[idx]);
+  },
+
+  deleteAsignatura(id) {
+    const idx = state.asignatura.findIndex(a => a.id_asignatura === id);
+    if (idx === -1) return false;
+    state.asignatura.splice(idx, 1);
+    return true;
+  },
+
+  listPlanes({ id_programa } = {}) {
+    let list = state.plan_estudio;
+    if (id_programa) list = list.filter(p => p.id_programa === id_programa);
+    return list.map(p => {
+      const asig = state.asignatura.find(a => a.id_asignatura === p.id_asignatura);
+      return {
+        ...clone(p),
+        asignatura_nombre: asig?.nombre_asignatura,
+        asignatura_codigo: asig?.codigo_asignatura,
+        creditos: asig?.creditos
+      };
+    });
+  },
+
+  createPlanEstudio(input) {
+    const record = { 
+      id_programa: input.id_programa,
+      id_asignatura: input.id_asignatura,
+      semestre: Number(input.semestre),
+      es_obligatoria: Boolean(input.es_obligatoria)
+    };
+    state.plan_estudio.push(record);
+    return clone(record);
+  },
+
+  updatePlanEstudio(id_programa, id_asignatura, data) {
+    const idx = state.plan_estudio.findIndex(p => p.id_programa === id_programa && p.id_asignatura === id_asignatura);
+    if (idx === -1) return null;
+    state.plan_estudio[idx] = { ...state.plan_estudio[idx], ...data };
+    return clone(state.plan_estudio[idx]);
+  },
+
+  listReglasCobro({ periodo, programaId } = {}) {
+    let list = state.regla_cobro;
+    if (periodo) list = list.filter(r => r.id_periodo === periodo);
+    if (programaId) list = list.filter(r => r.id_programa === programaId);
+    return clone(list);
+  },
+
+  createReglaCobro(input) {
+    const record = { ...input, estado: "ACTIVA" };
+    state.regla_cobro.push(record);
+    return clone(record);
+  },
+
+  listVolantes({ estudiante_id, periodo_id } = {}) {
+    let list = state.volante_matricula;
+    if (estudiante_id) list = list.filter(v => v.id_estudiante === estudiante_id);
+    if (periodo_id) list = list.filter(v => v.id_periodo === periodo_id);
+    
+    return list.map(v => {
+      const est = state.estudiante.find(e => e.id_estudiante === v.id_estudiante);
+      const prog = state.programa_academico.find(p => p.id_programa === v.id_programa);
+      const detalles = state.detalle_volante.filter(d => d.id_volante_matricula === v.id_volante);
+      const total = detalles.reduce((acc, d) => acc + (Number(d.cantidad) * Number(d.valor_unitario)), 0);
+      return {
+        ...clone(v),
+        estudiante_nombre: `${est?.primer_nombre} ${est?.primer_apellido}`,
+        programa_nombre: prog?.nombre_programa,
+        total
+      };
+    });
+  },
+
+  generateVolante(data) {
+    const { id_estudiante, id_periodo, modalidad_cobro, id_usuario, id_codigo_detalle, valor: manualValor } = data;
+    const estudiante = state.estudiante.find(e => e.id_estudiante === id_estudiante);
+    if (!estudiante) throw new Error("Estudiante no encontrado");
+
+    let valor = manualValor;
+    let codigo = id_codigo_detalle || "cd_001";
+
+    if (valor === undefined) {
+      const mod = modalidad_cobro || "GLOBAL";
+      const regla = state.regla_cobro.find(r => 
+        r.id_programa === estudiante.id_programa && 
+        r.id_periodo === id_periodo && 
+        r.modalidad_cobro === mod
+      );
+      if (!regla) {
+        throw new Error(`No hay regla de cobro configurada para programa ${estudiante.id_programa}, periodo ${id_periodo} y modalidad ${mod}`);
+      }
+      
+      if (mod === "GLOBAL") {
+        valor = regla.valor_global;
+      } else {
+        if (!data.asignaturas || data.asignaturas.length === 0) {
+           throw new Error("Debe seleccionar al menos una asignatura para el cobro por créditos.");
+        }
+        const creditosTotales = data.asignaturas.reduce((acc, asigId) => {
+          const asig = state.asignatura.find(a => a.id_asignatura === asigId);
+          return acc + (asig ? asig.creditos : 0);
+        }, 0);
+        valor = regla.valor_credito * creditosTotales;
+      }
+    }
+
+    const id_volante = makeId("vol");
+    const newVolante = {
+      id_volante,
+      numero_volante: `VOL-${Date.now()}`,
+      fecha_generacion: new Date().toISOString(),
+      semestre_a_cursar: 1,
+      generacion_tipo: "INDIVIDUAL",
+      estado: "GENERADO",
+      modalidad_cobro: modalidad_cobro || "OTRO",
+      id_usuario,
+      id_periodo,
+      id_estudiante,
+      id_programa: estudiante.id_programa
+    };
+
+    state.volante_matricula.unshift(newVolante);
+
+    let cuenta = state.cuenta_corriente.find(cc => cc.id_estudiante === id_estudiante && cc.id_periodo === id_periodo);
+    if (!cuenta) {
+      cuenta = {
+        id_cuenta: makeId("acc"),
+        fecha_apertura: new Date().toISOString(),
+        estado: "ABIERTA",
+        id_estudiante,
+        id_periodo
+      };
+      state.cuenta_corriente.push(cuenta);
+    }
+
+    const detObj = state.codigo_detalle.find(cd => cd.id_codigo_detalle === codigo);
+    const detalle = { id_codigo_detalle: codigo, id_volante_matricula: id_volante, cantidad: 1, valor_unitario: valor };
+    state.detalle_volante.push(detalle);
+
+    const lastSec = state.movimiento.filter(m => m.id_cuenta_corriente === cuenta.id_cuenta).length;
+    state.movimiento.push({
+      id_cuenta_corriente: cuenta.id_cuenta,
+      numero_secuencia: lastSec + 1,
+      id_codigo_detalle: codigo,
+      id_origen: id_volante,
+      tipo_origen: "VOLANTE",
+      fecha_movimiento: new Date().toISOString(),
+      descripcion_adicional: `${detObj?.nombre_codigo || "Cobro"} volante ${newVolante.numero_volante}`,
+      valor
+    });
+
+    return clone(newVolante);
+  },
+
+  createPago(data) {
+    const { id_volante_matricula, valor_pagado, referencia_pago, canal_pago, id_usuario, id_codigo_detalle } = data;
+    const volante = state.volante_matricula.find(v => v.id_volante === id_volante_matricula);
+    if (!volante) throw new Error("Volante no encontrado");
+
+    const idPago = makeId("pago");
+    const newPago = {
+      id_pago: idPago,
+      tipo_pago: "TOTAL",
+      valor_pagado: Number(valor_pagado),
+      fecha_pago: new Date().toISOString(),
+      estado_pago: "APROBADO",
+      referencia_pago,
+      canal_pago,
+      id_volante_matricula,
+      id_usuario
+    };
+
+    state.pago.push(newPago);
+
+    // Calcular si se pagó en su totalidad
+    const detalles = state.detalle_volante.filter(d => d.id_volante_matricula === id_volante_matricula);
+    const totalFacturado = detalles.reduce((acc, d) => acc + (Number(d.cantidad) * Number(d.valor_unitario)), 0);
+    
+    const pagosAplicados = state.pago.filter(p => p.id_volante_matricula === id_volante_matricula && p.estado_pago === "APROBADO");
+    const totalPagado = pagosAplicados.reduce((acc, p) => acc + p.valor_pagado, 0);
+
+    if (totalPagado >= totalFacturado) {
+      volante.estado = "PAGADO";
+      newPago.tipo_pago = "TOTAL";
+    } else {
+      volante.estado = "GENERADO";
+      newPago.tipo_pago = "PARCIAL";
+    }
+
+    const cuenta = state.cuenta_corriente.find(cc => cc.id_estudiante === volante.id_estudiante && cc.id_periodo === volante.id_periodo);
+    if (cuenta) {
+      const lastSec = state.movimiento.filter(m => m.id_cuenta_corriente === cuenta.id_cuenta).length;
+      const codigo = id_codigo_detalle || "cd_003";
+      const detObj = state.codigo_detalle.find(cd => cd.id_codigo_detalle === codigo);
+      state.movimiento.push({
+        id_cuenta_corriente: cuenta.id_cuenta,
+        numero_secuencia: lastSec + 1,
+        id_codigo_detalle: codigo,
+        id_origen: idPago,
+        tipo_origen: "PAGO",
+        fecha_movimiento: new Date().toISOString(),
+        descripcion_adicional: `${detObj?.nombre_codigo || "Pago"} ref: ${referencia_pago} - canal: ${canal_pago}`,
+        valor: valor_pagado
+      });
+    }
+
+    return clone(newPago);
+  },
+
+  listPagos({ id_estudiante } = {}) {
+    let list = state.pago;
+    if (id_estudiante) {
+      list = list.filter(p => {
+        const v = state.volante_matricula.find(vol => vol.id_volante === p.id_volante_matricula);
+        return v && v.id_estudiante === id_estudiante;
+      });
+    }
+    return list.map(p => {
+       const v = state.volante_matricula.find(vol => vol.id_volante === p.id_volante_matricula);
+       return { ...clone(p), numero_volante: v?.numero_volante };
+    });
+  },
+
+  getCuentaCorriente(estudiante_id, periodo_id) {
+    let cuentas = state.cuenta_corriente.filter(cc => cc.id_estudiante === estudiante_id);
+    if (periodo_id) {
+      cuentas = cuentas.filter(cc => cc.id_periodo === periodo_id);
+    }
+    
+    if (cuentas.length === 0) {
+      return { movimientos: [], summary: { totalCargos: 0, totalAbonos: 0, balance: 0 } };
+    }
+
+    const cuentaIds = cuentas.map(c => c.id_cuenta);
+    const movimientos = state.movimiento
+      .filter(m => cuentaIds.includes(m.id_cuenta_corriente))
+      .map(m => {
+        const det = state.codigo_detalle.find(cd => cd.id_codigo_detalle === m.id_codigo_detalle);
+        return { 
+          ...clone(m), 
+          id: `${m.id_cuenta_corriente}-${m.numero_secuencia}`,
+          descripcion: m.descripcion_adicional || det?.nombre_codigo,
+          tipo: det?.tipo_codigo, // COBRO or PAGO
+          fecha: m.fecha_movimiento
+        };
+      })
+      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    const totalCargos = movimientos.filter(m => m.tipo === "COBRO").reduce((acc, m) => acc + m.valor, 0);
+    const totalAbonos = movimientos.filter(m => m.tipo === "PAGO").reduce((acc, m) => acc + m.valor, 0);
+
+    return {
+      movimientos,
+      summary: { 
+        totalCargos, 
+        totalAbonos, 
+        balance: totalCargos - totalAbonos 
+      }
+    };
+  },
+
+  getCobro(id) {
+    const v = state.volante_matricula.find(vol => vol.id_volante === id);
+    if (!v) return null;
+    const est = state.estudiante.find(e => e.id_estudiante === v.id_estudiante);
+    const det = state.detalle_volante.filter(d => d.id_volante_matricula === id);
+    return {
+      ...clone(v),
+      estudiante_nombre: est ? `${est.primer_nombre} ${est.primer_apellido}` : "Desconocido",
+      detalles: det.map(d => {
+        const cd = state.codigo_detalle.find(c => c.id_codigo_detalle === d.id_codigo_detalle);
+        return { ...clone(d), nombre_codigo: cd?.nombre_codigo };
+      })
+    };
+  },
+
+  deleteCobro(id) {
+    const idx = state.volante_matricula.findIndex(v => v.id_volante === id);
+    if (idx === -1) return false;
+    state.volante_matricula.splice(idx, 1);
+    state.movimiento = state.movimiento.filter(m => m.id_origen !== id || m.tipo_origen !== "VOLANTE");
+    return true;
+  },
+
+  getReportesFinancieros(periodo_id) {
+    let movimientos = state.movimiento.filter(m => m.tipo_origen === "VOLANTE");
+    let pagos = state.pago.filter(p => p.estado_pago === "APROBADO");
+
+    if (periodo_id) {
+      movimientos = movimientos.filter(m => {
+        const v = state.volante_matricula.find(vol => vol.id_volante === m.id_origen);
+        return v && v.id_periodo === periodo_id;
+      });
+      pagos = pagos.filter(p => {
+        const v = state.volante_matricula.find(vol => vol.id_volante === p.id_volante_matricula);
+        return v && v.id_periodo === periodo_id;
+      });
+    }
+
+    const totalFacturado = movimientos.reduce((acc, m) => acc + m.valor, 0);
+
+    // Descuentos (conceptos como cd_004)
+    const descuentosOtorgados = pagos.filter(p => {
+       const m = state.movimiento.find(mov => mov.id_origen === p.id_pago && mov.tipo_origen === "PAGO");
+       return m && m.id_codigo_detalle === "cd_004";
+    }).reduce((acc, p) => acc + p.valor_pagado, 0);
+    
+    // Ingreso real en caja (todo lo que no sea descuento)
+    const ingresosReales = pagos.filter(p => {
+       const m = state.movimiento.find(mov => mov.id_origen === p.id_pago && mov.tipo_origen === "PAGO");
+       return m && m.id_codigo_detalle !== "cd_004"; 
+    }).reduce((acc, p) => acc + p.valor_pagado, 0);
+    
+    // Cartera viva: Facturado - (Pagado + Descontado)
+    const carteraPendiente = totalFacturado - ingresosReales - descuentosOtorgados;
+    
+    // La efectividad mide cuánto de lo facturado ya está resuelto (sea por pago o descuento)
+    const efectividad = totalFacturado > 0 ? ((ingresosReales + descuentosOtorgados) / totalFacturado) * 100 : 0;
+
+    const por_programa = state.programa_academico.map(prog => {
+      const facturadoProg = movimientos.filter(m => {
+        const v = state.volante_matricula.find(vol => vol.id_volante === m.id_origen);
+        return v && v.id_programa === prog.id_programa;
+      }).reduce((acc, m) => acc + m.valor, 0);
+      return { id: prog.id_programa, nombre: prog.nombre_programa, facturado: facturadoProg };
+    }).sort((a, b) => b.facturado - a.facturado);
+
+    // Estructura de salida equivalente a las futuras Vistas SQL
+    return {
+      vista_facturacion: {
+         total_bruto: totalFacturado,
+         descuentos: descuentosOtorgados,
+         total_neto: totalFacturado - descuentosOtorgados,
+         por_programa
+      },
+      vista_ingreso_real: {
+         total_recaudado: ingresosReales,
+         efectividad_porcentaje: efectividad
+      },
+      vista_cartera: {
+         total_pendiente: carteraPendiente > 0 ? carteraPendiente : 0
+      }
+    };
   }
 };
-

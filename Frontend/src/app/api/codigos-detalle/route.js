@@ -31,15 +31,21 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => null);
-  const { codigo, nombre, tipo, activo } = body ?? {};
+  const { id_codigo_detalle, nombre_codigo, tipo_codigo, prioridad_pago, estado_codigo } = body ?? {};
 
-  if (!codigo || !nombre || !tipo) {
+  if (!id_codigo_detalle || !nombre_codigo || !tipo_codigo) {
     return Response.json(
-      { message: "codigo, nombre, tipo are required" },
+      { message: "id_codigo_detalle, nombre_codigo, tipo_codigo are required" },
       { status: 400 },
     );
   }
 
-  const created = MockDb.createCodigoDetalle({ codigo, nombre, tipo, activo });
+  const created = MockDb.createCodigoDetalle({ 
+    id_codigo_detalle, 
+    nombre_codigo, 
+    tipo_codigo, 
+    prioridad_pago, 
+    estado_codigo 
+  });
   return Response.json(created, { status: 201 });
 }

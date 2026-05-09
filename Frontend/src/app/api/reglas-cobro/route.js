@@ -15,10 +15,9 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const periodo = searchParams.get("periodo");
   const programaId = searchParams.get("programaId");
-  const codigoDetalleId = searchParams.get("codigoDetalleId");
 
   return Response.json(
-    { items: MockDb.listReglasCobro({ periodo, programaId, codigoDetalleId }) },
+    { items: MockDb.listReglasCobro({ periodo, programaId }) },
     { status: 200 },
   );
 }
@@ -36,15 +35,22 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => null);
-  const { periodo, programaId, codigoDetalleId, valor, activo } = body ?? {};
+  const { id_periodo, id_programa, modalidad_cobro, valor_global, valor_credito, estado } = body ?? {};
 
-  if (!periodo || !programaId || !codigoDetalleId || valor === undefined) {
+  if (!id_periodo || !id_programa || !modalidad_cobro) {
     return Response.json(
-      { message: "periodo, programaId, codigoDetalleId, valor are required" },
+      { message: "id_periodo, id_programa and modalidad_cobro are required" },
       { status: 400 },
     );
   }
 
-  const created = MockDb.createReglaCobro({ periodo, programaId, codigoDetalleId, valor, activo });
+  const created = MockDb.createReglaCobro({ 
+    id_periodo, 
+    id_programa, 
+    modalidad_cobro, 
+    valor_global, 
+    valor_credito, 
+    estado 
+  });
   return Response.json(created, { status: 201 });
 }

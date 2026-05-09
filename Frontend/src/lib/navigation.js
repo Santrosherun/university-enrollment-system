@@ -23,6 +23,11 @@ export const NAV_ITEMS = [
     roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
   },
   {
+    label: "Asignaturas",
+    href: "/asignaturas",
+    roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
+  },
+  {
     label: "Estudiantes",
     href: "/estudiantes",
     roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
@@ -84,6 +89,10 @@ export const DASHBOARD_CARD_BY_HREF = {
     description:
       "Administra planes de estudio y su relación con periodos y programas.",
     cta: "Ir a Planes",
+  },
+  "/asignaturas": {
+    description: "Catálogo de materias, créditos y tipos de asignatura.",
+    cta: "Ir a Asignaturas",
   },
   "/estudiantes": {
     description: "Listado, creación y edición de estudiantes.",
