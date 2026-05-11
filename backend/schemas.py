@@ -226,3 +226,33 @@ class EstudianteOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# REGLAS DE COBRO
+class ReglaCobro(BaseModel):
+    modalidad_cobro      : str   # GLOBAL o POR_CREDITOS
+    id_periodo           : int
+    id_programa          : int
+    valor_global         : Optional[float] = None  # solo si modalidad es GLOBAL
+    valor_credito        : Optional[float] = None  # solo si modalidad es POR_CREDITOS
+    fecha_vigencia_desde : Optional[str]  = None
+    fecha_vigencia_hasta : Optional[str]  = None
+
+class ReglaCobroUpdate(BaseModel):
+    valor_global         : Optional[float] = None
+    valor_credito        : Optional[float] = None
+    fecha_vigencia_hasta : Optional[str]   = None
+    estado               : Optional[str]   = None
+
+class ReglaCobroOut(BaseModel):
+    modalidad_cobro      : str
+    id_periodo           : int
+    id_programa          : int
+    valor_global         : Optional[float]
+    valor_credito        : Optional[float]
+    fecha_vigencia_desde : str
+    fecha_vigencia_hasta : Optional[str]
+    estado               : str
+
+    class Config:
+        from_attributes = True

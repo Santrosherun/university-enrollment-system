@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from routers import auth, users, codigos_detalle, programas, periodos, estudiantes
+from routers import auth, users, codigos_detalle, programas, periodos, estudiantes, reglas_cobro
 import database
 
 
@@ -25,7 +25,7 @@ app.include_router(codigos_detalle.router)
 app.include_router(programas.router)
 app.include_router(periodos.router)
 app.include_router(estudiantes.router)
-
+app.include_router(reglas_cobro.router)
 
 
 @app.get("/")
