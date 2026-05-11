@@ -156,3 +156,73 @@ class PlanEstudioOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+
+# PERIODOS ACADÉMICOS
+class PeriodoCreate(BaseModel):
+    codigo_periodo : str        # ej: 2025-1
+    numero_periodo : int        # 1 o 2
+    anio           : int        # 2025
+    fecha_inicio   : str        # "2025-01-20"
+    fecha_fin      : str        # "2025-06-15"
+
+class PeriodoUpdate(BaseModel):
+    fecha_inicio   : Optional[str] = None
+    fecha_fin      : Optional[str] = None
+    estado         : Optional[str] = None
+
+class PeriodoOut(BaseModel):
+    id_periodo     : int
+    codigo_periodo : str
+    numero_periodo : int
+    anio           : int
+    fecha_inicio   : str
+    fecha_fin      : str
+    estado         : str
+
+    class Config:
+        from_attributes = True
+
+
+# ESTUDIANTES
+class EstudianteCreate(BaseModel):
+    tipo_documento     : str
+    numero_documento   : str
+    primer_nombre      : str
+    segundo_nombre     : Optional[str] = None
+    primer_apellido    : str
+    segundo_apellido   : Optional[str] = None
+    telefono_celular   : Optional[str] = None
+    telefono_fijo      : Optional[str] = None
+    correo_electronico : str
+    direccion          : Optional[str] = None
+    fecha_nacimiento   : Optional[str] = None
+    id_programa        : int
+
+class EstudianteUpdate(BaseModel):
+    primer_nombre      : Optional[str] = None
+    primer_apellido    : Optional[str] = None
+    telefono_celular   : Optional[str] = None
+    telefono_fijo      : Optional[str] = None
+    correo_electronico : Optional[str] = None
+    direccion          : Optional[str] = None
+    id_programa        : Optional[int] = None
+
+class EstudianteOut(BaseModel):
+    id_estudiante      : int
+    tipo_documento     : str
+    numero_documento   : str
+    primer_nombre      : str
+    segundo_nombre     : Optional[str]
+    primer_apellido    : str
+    segundo_apellido   : Optional[str]
+    telefono_celular   : Optional[str]
+    correo_electronico : str
+    direccion          : Optional[str]
+    fecha_ingreso      : str
+    id_programa        : int
+    nombre_programa    : Optional[str] = None
+
+    class Config:
+        from_attributes = True
