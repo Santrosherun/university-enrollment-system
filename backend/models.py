@@ -301,6 +301,7 @@ class Pago(Base):
     estado_pago          : Mapped[str]      = mapped_column(default="APROBADO")
     referencia_pago      : Mapped[str]      = mapped_column(unique=True)
     canal_pago           : Mapped[str]
+    tipo_pago            : Mapped[str]
     id_volante_matricula : Mapped[int]      = mapped_column(ForeignKey("volante_matricula.id_volante"))
     id_usuario           : Mapped[int]      = mapped_column(ForeignKey("usuario.id_usuario"))
  
