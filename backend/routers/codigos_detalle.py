@@ -45,7 +45,7 @@ def create_codigo(
     return codigo_detalle
 
 
-@router.put("/{id}")
+@router.put("/{id}", response_model=schemas.CodigoDetalleOut)
 def update_codigo(
     id: int,
     data: schemas.CodigoDetalleUpdate,

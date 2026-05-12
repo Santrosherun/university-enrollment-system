@@ -28,7 +28,7 @@ def get_regla(
         models.ReglaCobro.modalidad_cobro == modalidad, 
         models.ReglaCobro.id_periodo      == id_periodo,
         models.ReglaCobro.id_programa     == id_programa
-        )
+        ).first()
 
     if not regla:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Regla no encontrada")
@@ -54,10 +54,10 @@ def create_regla(
         models.ReglaCobro.modalidad_cobro == data.modalidad_cobro,
         models.ReglaCobro.id_periodo == data.id_periodo,
         models.ReglaCobro.id_programa == data.id_programa
-    )
+    ).first()
 
     if exists:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Ya existe una regla para esac ombinacion")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Ya existe una regla para esa combinacion")
 
     
     if not db.query(models.PeriodoAcademico).filter(models.PeriodoAcademico.id_periodo == data.id_periodo).first():

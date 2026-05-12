@@ -1,12 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-
-from routers import auth, users, codigos_detalle, programas, periodos, estudiantes, reglas_cobro
+from routers import auth, users, codigos_detalle, programas, periodos, estudiantes, reglas_cobro, asignaturas, inscripciones, volantes, pagos, cuentas, reportes
 import database
-
-
-database.Base.metadata.create_all(bind=database.engine) # Create tables if don't exist
 
 app  = FastAPI()
 
@@ -26,8 +21,13 @@ app.include_router(programas.router)
 app.include_router(periodos.router)
 app.include_router(estudiantes.router)
 app.include_router(reglas_cobro.router)
-
+app.include_router(asignaturas.router)
+app.include_router(inscripciones.router)
+app.include_router(volantes.router)
+app.include_router(pagos.router)
+app.include_router(cuentas.router)
+app.include_router(reportes.router)
 
 @app.get("/")
-def root():
-    return {"mensaje": "API ON"}
+def read_root():
+    return {"message": "Bienvenido a la API de UniEnroll"}
