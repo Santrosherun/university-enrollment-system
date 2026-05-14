@@ -21,6 +21,7 @@ export async function POST(request) {
 
   let token = null;
   let role = null;
+  let userName = null;
 
   if (!useMocks) {
     if (!apiBaseUrl) {
@@ -70,6 +71,9 @@ export async function POST(request) {
       payload?.jwt ??
       payload?.accessToken;
     role = payload?.role ?? payload?.user?.role ?? null;
+    userName = payload?.user?.primer_nombre 
+      ? `${payload.user.primer_nombre} ${payload.user.primer_apellido || ""}`.trim()
+      : payload?.user?.nombre || username.split("@")[0];
   } else {
     const loginResult = MockDb.login(username, password);
     if (!loginResult) {
@@ -80,6 +84,7 @@ export async function POST(request) {
     }
     token = loginResult.token;
     role = loginResult.user.rol; // El rol guardado en DB (ADMIN, ASISTENTE)
+    userName = loginResult.user.nombre || "Usuario";
 
     // Mapear roles internos a los roles de navegación si son diferentes
     if (role === "ADMIN") role = "ADMINISTRADOR";
@@ -118,6 +123,18 @@ export async function POST(request) {
     });
   }
 
-  return Response.json({ role }, { status: 200 });
+  if (userName) {
+    cookieStore.set({
+      name: "ues_name",
+      value: String(userName),
+      httpOnly: false,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 8,
+    });
+  }
+
+  return Response.json({ role, userName }, { status: 200 });
 }
 

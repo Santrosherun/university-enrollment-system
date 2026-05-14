@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Sidebar({ items, currentPath }) {
   return (
-    <aside className="hidden md:flex md:w-72 md:flex-col md:gap-5 md:border-r md:border-app-border md:bg-app-surface md:px-5 md:py-7 md:shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.02)]">
+    <aside className="hidden md:flex md:w-72 md:flex-col md:gap-5 md:border-r md:border-app-border md:bg-app-surface md:px-5 md:py-7 md:shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.02)] sticky top-0 max-h-screen overflow-y-auto shrink-0 no-scrollbar">
       <div className="px-1">
         <div className="text-sm font-semibold tracking-tight text-foreground">
           Matrículas U.

@@ -36,11 +36,11 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo / Title Section */}
         <div className="mb-10 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-app-accent text-3xl shadow-lg shadow-app-accent/20">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-app-accent shadow-lg shadow-app-accent/20">
 
           </div>
           <h1 className="text-3xl font-black tracking-tight text-zinc-900">
-            LOREM <span className="text-app-accent">IPSUM</span>
+            Universidad <span className="text-app-accent">del Caribe</span>
           </h1>
           <p className="mt-2 text-sm text-zinc-500">
             Sistema de Gestión de Matrículas y Cartera
@@ -142,7 +142,7 @@ export default function LoginPage() {
 
         {/* Footer info */}
         <p className="mt-8 text-center text-xs text-zinc-400">
-          &copy; 2024 University Enrollment System. <br />
+          &copy; 2024 Universidad del Caribe. <br />
           Todos los derechos reservados.
         </p>
       </div>
