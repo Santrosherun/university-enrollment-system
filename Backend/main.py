@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, users, codigos_detalle, programas, periodos, estudiantes, reglas_cobro, asignaturas, inscripciones, volantes, pagos, cuentas, reportes, rbac
 import database
+import models
 
 app  = FastAPI()
 
@@ -28,6 +29,10 @@ app.include_router(pagos.router)
 app.include_router(cuentas.router)
 app.include_router(reportes.router)
 app.include_router(rbac.router)
+
+# Crear tablas en la base de datos si no existen (ideal para Railway)
+models.Base.metadata.create_all(bind=database.engine)
+
 
 @app.get("/")
 def read_root():
