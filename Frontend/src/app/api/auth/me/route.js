@@ -1,13 +1,14 @@
-import { cookies } from "next/headers";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("ues_session")?.value;
+  const useMocks =
+    process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
+    process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!token) {
-    return Response.json({ authenticated: false }, { status: 200 });
+  if (!useMocks) {
+    return proxyToBackend("/auth/me");
   }
 
-  return Response.json({ authenticated: true }, { status: 200 });
+  // Fallback para mock si fuera necesario
+  return Response.json({ message: "Mock profile" });
 }
-

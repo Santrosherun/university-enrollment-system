@@ -1,24 +1,16 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
-export async function GET(request) {
+export async function GET() {
   const useMocks =
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for recaudos." },
-      { status: 501 },
-    );
+    return proxyToBackend("/pagos/");
   }
 
-  const { searchParams } = new URL(request.url);
-  const id_estudiante = searchParams.get("estudianteId");
-
-  return Response.json(
-    { items: MockDb.listPagos({ id_estudiante }) },
-    { status: 200 },
-  );
+  return Response.json({ items: MockDb.listRecaudos() });
 }
 
 export async function POST(request) {
@@ -26,34 +18,12 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for recaudos." },
-      { status: 501 },
-    );
-  }
-
   const body = await request.json().catch(() => null);
-  const { id_volante_matricula, valor_pagado, referencia_pago, canal_pago, id_codigo_detalle } = body ?? {};
 
-  if (!id_volante_matricula || !valor_pagado) {
-    return Response.json(
-      { message: "id_volante_matricula and valor_pagado are required" },
-      { status: 400 },
-    );
+  if (!useMocks) {
+    return proxyToBackend("/pagos/", "POST", body);
   }
 
-  try {
-    const created = MockDb.createPago({ 
-      id_volante_matricula, 
-      valor_pagado: Number(valor_pagado), 
-      referencia_pago, 
-      canal_pago,
-      id_codigo_detalle: id_codigo_detalle || "cd_003",
-      id_usuario: "user_admin" 
-    });
-    return Response.json(created, { status: 201 });
-  } catch (err) {
-    return Response.json({ message: err.message }, { status: 400 });
-  }
+  const created = MockDb.createRecaudo(body);
+  return Response.json(created, { status: 201 });
 }

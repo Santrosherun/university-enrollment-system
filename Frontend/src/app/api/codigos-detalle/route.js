@@ -1,21 +1,19 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
-export async function GET(request) {
+export async function GET() {
   const useMocks =
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for codigos-detalle." },
-      { status: 501 },
-    );
+    const res = await proxyToBackend("/codigos-detalle/");
+    if (!res.ok) return Response.json({ items: [] });
+    const data = await res.json();
+    return Response.json({ items: Array.isArray(data) ? data : [] });
   }
 
-  const { searchParams } = new URL(request.url);
-  const tipo = searchParams.get("tipo");
-
-  return Response.json({ items: MockDb.listCodigosDetalle({ tipo }) }, { status: 200 });
+  return Response.json({ items: MockDb.listCodigosDetalle() });
 }
 
 export async function POST(request) {
@@ -23,29 +21,12 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for codigos-detalle." },
-      { status: 501 },
-    );
-  }
-
   const body = await request.json().catch(() => null);
-  const { id_codigo_detalle, nombre_codigo, tipo_codigo, prioridad_pago, estado_codigo } = body ?? {};
 
-  if (!id_codigo_detalle || !nombre_codigo || !tipo_codigo) {
-    return Response.json(
-      { message: "id_codigo_detalle, nombre_codigo, tipo_codigo are required" },
-      { status: 400 },
-    );
+  if (!useMocks) {
+    return proxyToBackend("/codigos-detalle/", "POST", body);
   }
 
-  const created = MockDb.createCodigoDetalle({ 
-    id_codigo_detalle, 
-    nombre_codigo, 
-    tipo_codigo, 
-    prioridad_pago, 
-    estado_codigo 
-  });
+  const created = MockDb.createCodigoDetalle(body);
   return Response.json(created, { status: 201 });
 }

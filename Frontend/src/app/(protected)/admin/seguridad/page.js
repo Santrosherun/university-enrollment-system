@@ -105,11 +105,25 @@ export default function SeguridadAdminPage() {
 }
 
 function UserFormModal({ user, onClose, onSuccess }) {
-  const [formData, setFormData] = useState(user ?? {
-    nombre: "",
+  const [formData, setFormData] = useState(user ? {
+    primer_nombre: user.nombre.split(" ")[0] || "",
+    primer_apellido: user.nombre.split(" ").slice(1).join(" ") || "",
+    username: user.email.split("@")[0] || "", // Valor por defecto si es edición
+    email: user.email,
+    rol: user.rol === "ADMIN" ? "ADMINISTRADOR" : (user.rol || "ASISTENTE"),
+    tipo_documento: user.tipo_documento || "CC",
+    numero_documento: user.numero_documento || "",
+    telefono_contacto: user.telefono_contacto || "",
+  } : {
+    primer_nombre: "",
+    primer_apellido: "",
+    username: "",
     email: "",
     password: "",
-    rol: "ASISTENTE"
+    rol: "ASISTENTE",
+    tipo_documento: "CC",
+    numero_documento: "",
+    telefono_contacto: ""
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -126,7 +140,10 @@ function UserFormModal({ user, onClose, onSuccess }) {
         body: JSON.stringify(formData)
       });
       
-      if (!res.ok) throw new Error("Error al guardar usuario.");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Error al guardar usuario.");
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -137,59 +154,124 @@ function UserFormModal({ user, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl">
-        <h3 className="text-xl font-bold text-foreground">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl rounded-3xl border border-app-border bg-app-surface p-8 shadow-2xl">
+        <h3 className="text-2xl font-bold text-foreground">
           {user ? "Editar Usuario" : "Crear Nuevo Usuario"}
         </h3>
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-app-muted uppercase">Nombre Completo</label>
-            <input 
-              value={formData.nombre}
-              onChange={e => setFormData({...formData, nombre: e.target.value})}
-              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none focus:border-app-accent"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-app-muted uppercase">Email</label>
-            <input 
-              type="email"
-              value={formData.email}
-              onChange={e => setFormData({...formData, email: e.target.value})}
-              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none focus:border-app-accent"
-              required
-            />
-          </div>
-          {!user && (
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-app-muted uppercase">Contraseña Inicial</label>
-              <input 
-                type="password"
-                value={formData.password}
-                onChange={e => setFormData({...formData, password: e.target.value})}
-                className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none focus:border-app-accent"
-                required
-              />
+        <p className="text-sm text-app-muted mt-1 mb-8">Completa la información del funcionario para el sistema.</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Sección: Identificación */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black uppercase tracking-widest text-app-accent/70">Identificación</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-1 space-y-1">
+                  <label className="text-[10px] font-bold text-app-muted uppercase">Tipo</label>
+                  <select 
+                    value={formData.tipo_documento}
+                    onChange={e => setFormData({...formData, tipo_documento: e.target.value})}
+                    className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                  >
+                    <option value="CC">CC</option>
+                    <option value="CE">CE</option>
+                    <option value="TI">TI</option>
+                    <option value="PP">PP</option>
+                  </select>
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <label className="text-[10px] font-bold text-app-muted uppercase">Número de Documento</label>
+                  <input 
+                    value={formData.numero_documento}
+                    onChange={e => setFormData({...formData, numero_documento: e.target.value})}
+                    className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-app-muted uppercase">Primer Nombre</label>
+                <input 
+                  value={formData.primer_nombre}
+                  onChange={e => setFormData({...formData, primer_nombre: e.target.value})}
+                  className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-app-muted uppercase">Primer Apellido</label>
+                <input 
+                  value={formData.primer_apellido}
+                  onChange={e => setFormData({...formData, primer_apellido: e.target.value})}
+                  className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-app-muted uppercase">Teléfono de Contacto</label>
+                <input 
+                  value={formData.telefono_contacto}
+                  onChange={e => setFormData({...formData, telefono_contacto: e.target.value})}
+                  className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                />
+              </div>
             </div>
-          )}
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-app-muted uppercase">Rol de Acceso</label>
-            <select 
-              value={formData.rol}
-              onChange={e => setFormData({...formData, rol: e.target.value})}
-              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none focus:border-app-accent"
-            >
-              <option value="ADMIN">ADMIN (Acceso Total)</option>
-              <option value="SUPERVISOR">SUPERVISOR (Gestión académica)</option>
-              <option value="ASISTENTE">ASISTENTE (Caja y Atención)</option>
-            </select>
+
+            {/* Sección: Acceso */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black uppercase tracking-widest text-app-accent/70">Acceso al Sistema</h4>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-app-muted uppercase">Nombre de Usuario (Login)</label>
+                <input 
+                  value={formData.username}
+                  onChange={e => setFormData({...formData, username: e.target.value})}
+                  placeholder="ej: cmendoza"
+                  className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-app-muted uppercase">Email Institucional</label>
+                <input 
+                  type="email"
+                  value={formData.email}
+                  onChange={e => setFormData({...formData, email: e.target.value})}
+                  className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                  required
+                />
+              </div>
+              {!user && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-app-muted uppercase">Contraseña Inicial</label>
+                  <input 
+                    type="password"
+                    value={formData.password}
+                    onChange={e => setFormData({...formData, password: e.target.value})}
+                    className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                    required
+                  />
+                </div>
+              )}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-app-muted uppercase">Rol de Acceso</label>
+                <select 
+                  value={formData.rol}
+                  onChange={e => setFormData({...formData, rol: e.target.value})}
+                  className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                >
+                  <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+                  <option value="SUPERVISOR">SUPERVISOR</option>
+                  <option value="ASISTENTE">ASISTENTE</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-end gap-3 pt-4">
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-app-border">
             <Button variant="ghost" onClick={onClose} type="button">Cancelar</Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Guardando..." : "Guardar Usuario"}
+              {submitting ? "Guardando..." : (user ? "Actualizar Datos" : "Crear Usuario")}
             </Button>
           </div>
         </form>

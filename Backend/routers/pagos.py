@@ -10,8 +10,7 @@ router = APIRouter(prefix="/pagos")
 
 @router.get("/", response_model=list[schemas.PagoOut])
 def get_pagos(
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR", "ASISTENTE"))
+    db: Session = Depends(database.get_db)
 ):
     return db.query(models.Pago).all()
 
@@ -63,32 +62,44 @@ def create_pago(
     db.add(pago)
     db.flush()
 
-    # 6. Registrar movimiento en Cuenta Corriente
+    # 6. Registrar movimiento en Cuenta Corriente con bloqueo atómico
     cuenta = db.query(models.CuentaCorriente).filter(
         models.CuentaCorriente.id_estudiante == volante.id_estudiante,
         models.CuentaCorriente.id_periodo == volante.id_periodo
-    ).first()
+    ).with_for_update().first()
 
     if cuenta:
+        # Resolver código de detalle
+        id_codigo = data.id_codigo_detalle
+        if not id_codigo:
+            codigo_mpag = db.query(models.CodigoDetalle).filter_by(codigo="MPAG").first()
+            if codigo_mpag: id_codigo = codigo_mpag.id_codigo_detalle
+
         max_sec = db.query(func.max(models.Movimiento.numero_secuencia)).filter(
             models.Movimiento.id_cuenta_corriente == cuenta.id_cuenta
         ).scalar() or 0
 
-        # Código de detalle para 'Pago de Matrícula' (asumimos PAG-MAT o similar)
-        codigo_pago = db.query(models.CodigoDetalle).filter(models.CodigoDetalle.codigo == "PAG").first()
-        if not codigo_pago:
-             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "No se ha configurado el Código de Detalle con código 'PAG' para Recaudos")
-
-        movimiento = models.Movimiento(
-            id_cuenta_corriente = cuenta.id_cuenta,
-            numero_secuencia = max_sec + 1,
-            id_codigo_detalle = codigo_pago.id_codigo_detalle,
-            id_origen = pago.id_pago,
-            tipo_origen = "PAGO",
-            valor = data.valor_pagado,
-            descripcion_adicional = f"Pago recibido ref: {data.referencia_pago} - Canal: {data.canal_pago}"
-        )
-        db.add(movimiento)
+        inserted = False
+        next_sec = int(max_sec) + 1
+        while not inserted:
+            try:
+                with db.begin_nested():
+                    mov = models.Movimiento(
+                        id_cuenta_corriente = cuenta.id_cuenta,
+                        numero_secuencia = next_sec,
+                        id_codigo_detalle = id_codigo,
+                        id_origen = pago.id_pago,
+                        tipo_origen = "PAGO",
+                        valor = data.valor_pagado,
+                        descripcion_adicional = f"Pago recibido ref: {data.referencia_pago} — canal: {data.canal_pago}"
+                    )
+                    db.add(mov)
+                    db.flush()
+                    inserted = True
+            except Exception:
+                next_sec += 1
+                if next_sec > int(max_sec) + 10:
+                    break
 
     db.commit()
     db.refresh(pago)

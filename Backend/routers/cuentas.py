@@ -11,8 +11,7 @@ router = APIRouter(prefix="/cuentas")
 @router.get("/estudiante/{id_estudiante}", response_model=list[schemas.CuentaCorrienteOut])
 def get_cuentas_estudiante(
     id_estudiante: int,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR", "ASISTENTE"))
+    db: Session = Depends(database.get_db)
 ):
     return db.query(models.CuentaCorriente).filter(models.CuentaCorriente.id_estudiante == id_estudiante).all()
 
@@ -20,8 +19,7 @@ def get_cuentas_estudiante(
 def get_extracto_periodo(
     id_estudiante: int,
     id_periodo: int,
-    db: Session = Depends(database.get_db),
-    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR", "ASISTENTE"))
+    db: Session = Depends(database.get_db)
 ):
     # 1. Buscar la cuenta
     cuenta = db.query(models.CuentaCorriente).filter(

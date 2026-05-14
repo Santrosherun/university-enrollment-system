@@ -63,6 +63,7 @@ function ConfirmModal({ title, description, confirmLabel, onConfirm, onClose }) 
 }
 
 const formatCurrency = (val) => {
+  if (val === null || val === undefined) return "N/A";
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
@@ -87,10 +88,10 @@ export default function ReglasCobroPage() {
   const filtered = useMemo(() => {
     let list = items;
     if (filterPeriodo) {
-      list = list.filter((r) => r.id_periodo === filterPeriodo);
+      list = list.filter((r) => String(r.id_periodo) === String(filterPeriodo));
     }
     if (filterPrograma) {
-      list = list.filter((r) => r.id_programa === filterPrograma);
+      list = list.filter((r) => String(r.id_programa) === String(filterPrograma));
     }
     return list;
   }, [items, filterPeriodo, filterPrograma]);
@@ -131,11 +132,12 @@ export default function ReglasCobroPage() {
 
   async function save(form) {
     const isEdit = Boolean(editing);
-    // For editing, we use a custom PK identifier or just POST if the mock handles it.
-    // In this simple mock, we'll use POST and it will just add. 
-    // Actually, I should implement a proper update if it exists.
-    const url = "/api/reglas-cobro"; 
-    const method = "POST"; // Simplified for now since we don't have a single ID
+    
+    // Si es edición, la ruta incluye modalidad, periodo y programa
+    const url = isEdit 
+      ? `/api/reglas-cobro/${editing.modalidad_cobro}/${editing.id_periodo}/${editing.id_programa}`
+      : "/api/reglas-cobro"; 
+    const method = isEdit ? "PUT" : "POST";
 
     const res = await fetch(url, {
       method,
@@ -145,7 +147,7 @@ export default function ReglasCobroPage() {
 
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
-      throw new Error(payload?.message ?? "No se pudo guardar la regla.");
+      throw new Error(payload?.message ?? payload?.detail ?? "No se pudo guardar la regla.");
     }
 
     await loadData();
@@ -153,18 +155,24 @@ export default function ReglasCobroPage() {
     setEditing(null);
   }
 
-  async function toggleActivo(item) {
-    // Simplified: we'll just reload after a mock "update" if we had a proper endpoint.
-    // For now, let's just show it.
-  }
-
   async function removeRegla(item) {
-    // Simplified for the demo
-    await loadData();
+    try {
+      const res = await fetch(`/api/reglas-cobro/${item.modalidad_cobro}/${item.id_periodo}/${item.id_programa}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.message ?? "Error al eliminar");
+      }
+      await loadData();
+      setDeleteTarget(null);
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
-  const getProgName = (id) => programas.find((p) => p.id_programa === id)?.nombre_programa ?? id;
-  const getPeriodoCode = (id) => periodos.find((p) => p.id_periodo === id)?.codigo_periodo ?? id;
+  const getProgName = (id) => programas.find((p) => String(p.id_programa) === String(id))?.nombre_programa ?? id;
+  const getPeriodoCode = (id) => periodos.find((p) => String(p.id_periodo) === String(id))?.codigo_periodo ?? id;
 
   return (
     <div className="space-y-7">
@@ -247,14 +255,14 @@ export default function ReglasCobroPage() {
               </thead>
               <tbody>
                 {filtered.map((item, idx) => (
-                  <tr key={`${item.id_periodo}-${item.id_programa}-${idx}`} className="border-b border-app-border/70 hover:bg-zinc-50/50">
+                  <tr key={`${item.id_periodo}-${item.id_programa}-${item.modalidad_cobro}-${idx}`} className="border-b border-app-border/70 hover:bg-zinc-50/50">
                     <td className="py-3 pr-4 font-medium text-foreground">
                       {getPeriodoCode(item.id_periodo)}
                     </td>
                     <td className="py-3 pr-4 text-foreground">
                       {getProgName(item.id_programa)}
                     </td>
-                    <td className="py-3 pr-4 text-app-muted">
+                    <td className="py-3 pr-4 text-app-muted font-bold text-[10px]">
                       {item.modalidad_cobro}
                     </td>
                     <td className="py-3 pr-4 font-semibold text-app-accent">
@@ -357,11 +365,11 @@ function ReglaFormModal({ title, initial, programas, periodos, onClose, onSave }
     setError(null);
     try {
       await onSave({
-        id_periodo,
-        id_programa,
+        id_periodo: Number(id_periodo),
+        id_programa: Number(id_programa),
         modalidad_cobro,
         valor_global: modalidad_cobro === 'GLOBAL' ? Number(valor_global) : null,
-        valor_credito: modalidad_cobro === 'CREDITO' ? Number(valor_credito) : null,
+        valor_credito: modalidad_cobro === 'CREDITOS' ? Number(valor_credito) : null,
         estado,
       });
     } catch (err) {
@@ -385,6 +393,7 @@ function ReglaFormModal({ title, initial, programas, periodos, onClose, onSave }
               onChange={(e) => setPeriodoId(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               required
+              disabled={Boolean(initial)}
             >
               <option value="">Selecciona un periodo...</option>
               {periodos.map((p) => (
@@ -401,9 +410,10 @@ function ReglaFormModal({ title, initial, programas, periodos, onClose, onSave }
               onChange={(e) => setModalidad(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               required
+              disabled={Boolean(initial)}
             >
               <option value="GLOBAL">GLOBAL (Semestre completo)</option>
-              <option value="CREDITO">CRÉDITO (Por crédito académico)</option>
+              <option value="CREDITOS">CRÉDITO (Por crédito académico)</option>
             </select>
           </div>
         </div>
@@ -415,6 +425,7 @@ function ReglaFormModal({ title, initial, programas, periodos, onClose, onSave }
             onChange={(e) => setProgramaId(e.target.value)}
             className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
             required
+            disabled={Boolean(initial)}
           >
             <option value="">Selecciona un programa...</option>
             {programas.map((p) => (
@@ -481,5 +492,3 @@ function ReglaFormModal({ title, initial, programas, periodos, onClose, onSave }
     </Modal>
   );
 }
-
-

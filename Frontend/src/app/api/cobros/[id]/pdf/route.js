@@ -1,4 +1,4 @@
-import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET(request, { params }) {
   const { id } = await params;
@@ -7,24 +7,11 @@ export async function GET(request, { params }) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    // Aquí es donde harías el proxy a FastAPI que usa WeasyPrint
-    // const res = await fetch(`http://backend:8000/volantes/${id}/pdf`);
-    // return res;
-    return Response.json(
-      { message: "Backend not configured yet for PDF generation." },
-      { status: 501 },
-    );
+    return proxyToBackend(`/volantes/${id}/pdf`);
   }
 
-  const cobro = MockDb.getCobro(id);
-  if (!cobro) {
-    return Response.json({ message: "Cobro no encontrado." }, { status: 404 });
-  }
-
-  // Simulamos un PDF enviando un chorro de texto que el navegador tratará como binario
-  // En la vida real, aquí recibirías el stream de Python/WeasyPrint
-  const dummyPdfContent = `%PDF-1.4\n1 0 obj\n<< /Title (Volante ${id}) /Creator (NextJS Mock) >>\nendobj\n... (Contenido simulado del volante para ${cobro.periodo})`;
-  
+  // Si estamos en mocks, devolvemos el dummy que ya tenías
+  const dummyPdfContent = `%PDF-1.4\n1 0 obj\n<< /Title (Volante ${id}) >>\nendobj`;
   return new Response(dummyPdfContent, {
     headers: {
       "Content-Type": "application/pdf",

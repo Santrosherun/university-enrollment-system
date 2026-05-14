@@ -1,4 +1,5 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET(request) {
   const useMocks =
@@ -6,10 +7,10 @@ export async function GET(request) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for estudiantes." },
-      { status: 501 },
-    );
+    const res = await proxyToBackend("/estudiantes/");
+    if (!res.ok) return Response.json({ items: [] });
+    const data = await res.json();
+    return Response.json({ items: Array.isArray(data) ? data : [] });
   }
 
   const { searchParams } = new URL(request.url);
@@ -26,14 +27,12 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
+  const body = await request.json().catch(() => null);
+
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for estudiantes." },
-      { status: 501 },
-    );
+    return proxyToBackend("/estudiantes/", "POST", body);
   }
 
-  const body = await request.json().catch(() => null);
   const { 
     tipo_documento, numero_documento, 
     primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,

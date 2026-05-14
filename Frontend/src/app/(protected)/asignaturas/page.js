@@ -30,18 +30,13 @@ export default function AsignaturasPage() {
   const [status, setStatus] = useState("idle");
 
   const [editing, setEditing] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   async function loadData() {
     setLoading(true);
     try {
       const res = await fetch("/api/asignaturas");
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await res.text();
-        console.error("Expected JSON but got:", text.substring(0, 200));
-        throw new Error("El servidor no devolvió un JSON válido.");
-      }
       const json = await res.json();
       setItems(json.items ?? []);
     } catch (err) {
@@ -92,6 +87,22 @@ export default function AsignaturasPage() {
       alert(err.message);
     } finally {
       setStatus("idle");
+    }
+  }
+
+  async function removeAsignatura(item) {
+    try {
+      const res = await fetch(`/api/asignaturas/${item.id_asignatura}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Error al eliminar");
+      }
+      await loadData();
+      setDeleteTarget(null);
+    } catch (err) {
+      alert(err.message);
     }
   }
 
@@ -164,13 +175,23 @@ export default function AsignaturasPage() {
                       </span>
                     </td>
                     <td className="py-4 text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => { setEditing(a); setOpen(true); }}
-                      >
-                        Editar
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => { setEditing(a); setOpen(true); }}
+                        >
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:bg-red-50"
+                          onClick={() => setDeleteTarget(a)}
+                        >
+                          Eliminar
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -259,6 +280,32 @@ export default function AsignaturasPage() {
           </form>
         </Modal>
       )}
+
+      {deleteTarget && (
+        <ConfirmDeleteModal 
+          item={deleteTarget} 
+          onClose={() => setDeleteTarget(null)} 
+          onConfirm={() => removeAsignatura(deleteTarget)}
+        />
+      )}
     </div>
+  );
+}
+
+function ConfirmDeleteModal({ item, onClose, onConfirm }) {
+  return (
+    <Modal title="Eliminar Asignatura" onClose={onClose}>
+      <div className="space-y-4">
+        <p className="text-sm text-app-muted">
+          ¿Estás seguro de que deseas eliminar la asignatura <strong className="text-foreground">{item.nombre_asignatura}</strong>? Esta acción no se puede deshacer y podría afectar los planes de estudio vigentes.
+        </p>
+        <div className="flex justify-end gap-3 pt-4 border-t border-app-border">
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button variant="danger" onClick={onConfirm} className="bg-red-600 hover:bg-red-700 text-white border-none">
+            Sí, eliminar asignatura
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }

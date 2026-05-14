@@ -177,6 +177,8 @@ class PlanEstudio(Base):
     creditos_plan: Mapped[int] = mapped_column(Integer, nullable=False)
     es_obligatoria: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    asignatura: Mapped["Asignatura"] = relationship()
+
     __table_args__ = (
         CheckConstraint("semestre > 0", name="ck_plan_semestre"),
         CheckConstraint("creditos_plan > 0", name="ck_plan_creditos"),
@@ -296,6 +298,7 @@ class DetalleVolante(Base):
     valor_unitario: Mapped[float] = mapped_column(Numeric(14,2), nullable=False)
 
     volante: Mapped["VolanteMatricula"] = relationship(back_populates="detalles")
+    codigo_detalle: Mapped["CodigoDetalle"] = relationship()
 
     __table_args__ = (
         CheckConstraint("cantidad > 0", name="ck_detalle_volante_cantidad"),

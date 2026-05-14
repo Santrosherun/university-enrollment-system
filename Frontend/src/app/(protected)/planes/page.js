@@ -116,13 +116,12 @@ export default function PlanesPage() {
     setEditing(null);
   }
 
-  async function removePlan(item) {
-    // Simplified for demo
-    await loadPlanes(selectedProgramaId);
-    setDeleteTarget(null);
-  }
 
-  const selectedPrograma = programas.find((p) => p.id_programa === selectedProgramaId);
+  const totalCredits = useMemo(() => {
+    return planes.reduce((acc, p) => acc + (p.creditos_plan || 0), 0);
+  }, [planes]);
+
+  const selectedPrograma = programas.find((p) => String(p.id_programa) === String(selectedProgramaId));
 
   return (
     <div className="space-y-7">
@@ -132,18 +131,24 @@ export default function PlanesPage() {
             Planes de estudio
           </h1>
           <p className="mt-1 text-sm leading-relaxed text-app-muted">
-            Selecciona un programa y administra sus planes.
+            Administra la malla curricular y los créditos de cada programa.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setOpen(true);
-          }}
-          disabled={!selectedProgramaId}
-        >
-          Agregar asignatura
-        </Button>
+        <div className="flex gap-3">
+          <div className="rounded-xl border border-app-border bg-app-surface px-4 py-2 text-center shadow-sm">
+            <div className="text-[10px] font-black uppercase text-app-muted">Total Créditos</div>
+            <div className="text-xl font-bold text-app-accent">{totalCredits}</div>
+          </div>
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+            disabled={!selectedProgramaId}
+          >
+            Agregar asignatura
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-sm">
@@ -227,13 +232,6 @@ export default function PlanesPage() {
                         >
                           Editar
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteTarget(p)}
-                        >
-                          Remover
-                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -266,21 +264,6 @@ export default function PlanesPage() {
         />
       ) : null}
 
-      {deleteTarget ? (
-        <ConfirmModal
-          title="Remover asignatura"
-          description={
-            <span>
-              ¿Seguro que quieres remover{" "}
-              <strong className="text-foreground">{deleteTarget.asignatura_nombre}</strong>{" "}
-              de este plan de estudio?
-            </span>
-          }
-          confirmLabel="Sí, remover"
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => removePlan(deleteTarget)}
-        />
-      ) : null}
     </div>
   );
 }
@@ -298,10 +281,20 @@ function PlanFormModal({
     initial?.id_programa ?? defaultProgramaId ?? "",
   );
   const [id_asignatura, setAsigId] = useState(initial?.id_asignatura ?? "");
+  const [creditos_plan, setCreditos] = useState(initial?.creditos_plan ?? "");
   const [semestre, setSemestre] = useState(initial?.semestre ?? "1");
   const [es_obligatoria, setObligatoria] = useState(Boolean(initial?.es_obligatoria ?? true));
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
+
+  // Auto-completar créditos al seleccionar asignatura
+  function handleAsigChange(id) {
+    setAsigId(id);
+    if (!initial) {
+      const selected = asignaturas.find(a => String(a.id_asignatura) === String(id));
+      if (selected) setCreditos(selected.creditos);
+    }
+  }
 
   async function submit(e) {
     e.preventDefault();
@@ -310,8 +303,9 @@ function PlanFormModal({
     try {
       await onSave({
         id_programa,
-        id_asignatura,
+        id_asignatura: Number(id_asignatura),
         semestre: Number(semestre),
+        creditos_plan: Number(creditos_plan),
         es_obligatoria
       });
     } catch (err) {
@@ -344,7 +338,7 @@ function PlanFormModal({
           <label className="text-sm font-medium text-foreground">Asignatura</label>
           <select
             value={id_asignatura}
-            onChange={(e) => setAsigId(e.target.value)}
+            onChange={(e) => handleAsigChange(e.target.value)}
             disabled={!!initial}
             className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-50"
             required
@@ -352,7 +346,7 @@ function PlanFormModal({
             <option value="">Selecciona una asignatura...</option>
             {asignaturas.map((a) => (
               <option key={a.id_asignatura} value={a.id_asignatura}>
-                {a.codigo_asignatura} — {a.nombre_asignatura}
+                {a.codigo_asignatura} — {a.nombre_asignatura} ({a.creditos} cr)
               </option>
             ))}
           </select>
@@ -367,6 +361,17 @@ function PlanFormModal({
               max="12"
               value={semestre}
               onChange={(e) => setSemestre(e.target.value)}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Créditos en este plan</label>
+            <input
+              type="number"
+              min="1"
+              value={creditos_plan}
+              onChange={(e) => setCreditos(e.target.value)}
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
               required
             />

@@ -5,6 +5,10 @@ from typing import Optional
 # SCHEMAS PARA USUARIOS Y AUTENTICACIÓN
 # ------------------------------------------------------------------
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 class UsuarioBase(BaseModel):
     username: str
     correo_notificacion: str
@@ -55,6 +59,7 @@ class UsuarioOut(UsuarioBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    role: str
     user: UsuarioOut
 
 # ------------------------------------------------------------------
@@ -110,12 +115,14 @@ class AsignaturaOut(AsignaturaBase):
 class PlanEstudioCreate(BaseModel):
     id_asignatura: int
     semestre: int
+    creditos_plan: int
     es_obligatoria: bool = True
 
 class PlanEstudioOut(BaseModel):
     id_programa: int
     id_asignatura: int
     semestre: int
+    creditos_plan: int
     es_obligatoria: bool
     asignatura: Optional[AsignaturaOut] = None
 
@@ -213,10 +220,17 @@ class EstudianteCreate(EstudianteBase):
     pass
 
 class EstudianteUpdate(BaseModel):
+    tipo_documento: Optional[str] = None
+    numero_documento: Optional[str] = None
+    primer_nombre: Optional[str] = None
+    segundo_nombre: Optional[str] = None
+    primer_apellido: Optional[str] = None
+    segundo_apellido: Optional[str] = None
     telefono_celular: Optional[str] = None
     telefono_fijo: Optional[str] = None
     correo_electronico: Optional[str] = None
     direccion: Optional[str] = None
+    fecha_nacimiento: Optional[date] = None
     id_programa: Optional[int] = None
 
 class EstudianteOut(EstudianteBase):
@@ -267,6 +281,13 @@ class VolanteCreate(BaseModel):
     id_periodo: int
     modalidad_cobro: str # GLOBAL o POR_CREDITOS
     semestre_a_cursar: int = 1
+    creditos: Optional[int] = None
+    valor: Optional[Decimal] = None
+    id_codigo_detalle: Optional[int] = None
+
+class VolanteMassCreate(BaseModel):
+    id_programa: Optional[int] = None # Opcional: si es None, genera para todos
+    id_periodo: int
 
 class VolanteOut(BaseModel):
     id_volante: int
@@ -278,6 +299,8 @@ class VolanteOut(BaseModel):
     modalidad_cobro: str
     id_estudiante: int
     id_periodo: int
+    estudiante_nombre: Optional[str] = None
+    total: Decimal = 0
     detalles: list[DetalleVolanteOut] = []
 
     class Config:
@@ -370,6 +393,8 @@ class IngresoEsperadoOut(BaseModel):
     ingreso_esperado_total: Decimal
 
 class EstudiantePendienteOut(BaseModel):
+    id_programa: Optional[int] = None
+    nombre_programa: Optional[str] = None
     nombre_estudiante: str
     numero_documento: str
     monto_esperado: Decimal
@@ -387,4 +412,50 @@ class CreditoFinancieroOut(BaseModel):
     nombre_programa: str
     valor_credito: Decimal
 
+# ------------------------------------------------------------------
+# SCHEMAS PARA CONTROL DE ACCESO BASADO EN ROLES (RBAC)
+# ------------------------------------------------------------------
 
+class RolOut(BaseModel):
+    id_rol: int
+    nombre_rol: str
+    descripcion: Optional[str] = None
+    es_especial: bool = False
+
+    class Config:
+        from_attributes = True
+
+class MenuOut(BaseModel):
+    id_menu: int
+    nombre_menu: str
+    descripcion: Optional[str] = None
+    ruta: Optional[str] = None
+    orden: int
+    estado: str
+    id_menu_padre: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+class PermisoOut(BaseModel):
+    id_menu: int
+    id_rol: int
+    puede_ver: bool
+    puede_crear: bool
+    puede_editar: bool
+    puede_eliminar: bool
+    menu_nombre: Optional[str] = None
+    menu_ruta: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class PermisoItemUpdate(BaseModel):
+    id_menu: int
+    puede_ver: bool
+    puede_crear: bool
+    puede_editar: bool
+    puede_eliminar: bool
+
+class PermisoBatchUpdate(BaseModel):
+    permisos: list[PermisoItemUpdate]

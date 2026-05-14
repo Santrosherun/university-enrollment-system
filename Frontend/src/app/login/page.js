@@ -55,15 +55,14 @@ export default function LoginPage() {
           <form onSubmit={onSubmit} className="space-y-5">
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                Email Institucional
+                Email o Usuario
               </label>
               <input
-                type="email"
+                type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="ejemplo@ues.edu.co"
+                placeholder="ejemplo@ues.edu.co o usuario"
                 className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-300 focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
-                autoComplete="email"
                 required
               />
             </div>

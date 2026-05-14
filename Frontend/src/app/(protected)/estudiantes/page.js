@@ -148,16 +148,6 @@ export default function EstudiantesPage() {
     setEditing(null);
   }
 
-  async function toggleActivo(item) {
-    const nuevoEstado = item.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
-    const res = await fetch(`/api/estudiantes/${item.id_estudiante}`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ estado: nuevoEstado }),
-    });
-    if (!res.ok) return;
-    await load();
-  }
 
   async function removeEstudiante(item) {
     const res = await fetch(`/api/estudiantes/${item.id_estudiante}`, { method: "DELETE" });
@@ -242,7 +232,6 @@ export default function EstudiantesPage() {
                   <th className="py-3 pr-4">Documento</th>
                   <th className="py-3 pr-4">Nombre Completo</th>
                   <th className="py-3 pr-4">Programa</th>
-                  <th className="py-3 pr-4">Estado</th>
                   <th className="py-3 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -262,18 +251,6 @@ export default function EstudiantesPage() {
                       <td className="py-3 pr-4 text-foreground/90">
                         {getProgName(item.id_programa)}
                       </td>
-                      <td className="py-3 pr-4">
-                        <span
-                          className={[
-                            "inline-flex rounded-full px-2 py-1 text-xs font-medium",
-                            item.estado === "ACTIVO"
-                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                              : "bg-zinc-100 text-zinc-700 border border-app-border",
-                          ].join(" ")}
-                        >
-                          {item.estado === "ACTIVO" ? "Activo" : "Inactivo"}
-                        </span>
-                      </td>
                       <td className="py-3 text-right">
                         <div className="inline-flex flex-wrap justify-end gap-2">
                           <Button
@@ -285,13 +262,6 @@ export default function EstudiantesPage() {
                             }}
                           >
                             Editar
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleActivo(item)}
-                          >
-                            {item.estado === "ACTIVO" ? "Desactivar" : "Activar"}
                           </Button>
                           <Button
                             variant="danger"
@@ -365,7 +335,6 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
     direccion: initial?.direccion ?? "",
     id_programa: initial?.id_programa ?? "",
     fecha_ingreso: initial?.fecha_ingreso ?? new Date().toISOString().split("T")[0],
-    estado: initial?.estado ?? "ACTIVO",
   });
 
   const [status, setStatus] = useState("idle");
@@ -529,18 +498,6 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-foreground">Estado</label>
-          <select
-            name="estado"
-            value={formData.estado}
-            onChange={handleChange}
-            className="rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm outline-none focus:border-app-accent"
-          >
-            <option value="ACTIVO">Activo</option>
-            <option value="INACTIVO">Inactivo</option>
-          </select>
-        </div>
 
         {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">

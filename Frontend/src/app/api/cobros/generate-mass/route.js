@@ -1,27 +1,19 @@
-import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function POST(request) {
   const useMocks =
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for cobros." },
-      { status: 501 },
-    );
-  }
-
   const body = await request.json().catch(() => null);
-  const { programaId, periodo } = body ?? {};
 
-  if (!programaId || !periodo) {
-    return Response.json(
-      { message: "programaId and periodo are required" },
-      { status: 400 },
-    );
+  if (!useMocks) {
+    // El backend espera id_programa e id_periodo
+    return proxyToBackend("/volantes/generate-mass", "POST", {
+      id_programa: body.id_programa ? Number(body.id_programa) : null,
+      id_periodo: Number(body.id_periodo)
+    });
   }
 
-  const result = MockDb.generateCobrosMasivos(programaId, periodo);
-  return Response.json(result, { status: 200 });
+  return Response.json({ message: "Mock mass generation done (no-op)" }, { status: 200 });
 }

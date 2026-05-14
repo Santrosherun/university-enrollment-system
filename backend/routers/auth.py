@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from dotenv import load_dotenv
 import bcrypt
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -12,6 +12,7 @@ from sqlalchemy import select
 import models
 import database
 import schemas
+from utils.email_sender import send_welcome_email
 
 
 load_dotenv()
@@ -94,6 +95,7 @@ def build_usuario_out(usuario: models.Usuario):
 @router.post("/register", response_model=schemas.UsuarioOut, status_code=201)
 def register(
         data: schemas.UsuarioCreate,
+        background_tasks: BackgroundTasks,
         db: Session = Depends(database.get_db),
         token: Optional[str] = Depends(OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False))
 ):
@@ -147,15 +149,31 @@ def register(
     db.commit()
     db.refresh(usuario)
 
+    # Enviar correo de bienvenida con credenciales en segundo plano
+    background_tasks.add_task(
+        send_welcome_email,
+        to_email=data.correo_personal,
+        user_name=f"{data.primer_nombre} {data.primer_apellido}",
+        username=data.username,
+        raw_password=data.password,
+        rol=data.nombre_rol
+    )
+
     return build_usuario_out(usuario)
 
 
 @router.post("/login", response_model=schemas.Token)
 def login(
-        data: OAuth2PasswordRequestForm = Depends(), 
+        data: schemas.LoginRequest, 
         db: Session = Depends(database.get_db),
 ):
-    user = db.query(models.Usuario).filter(models.Usuario.username == data.username).first()
+    from sqlalchemy import or_
+    user = db.query(models.Usuario).filter(
+        or_(
+            models.Usuario.username == data.username,
+            models.Usuario.correo_notificacion == data.username
+        )
+    ).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     if user.estado != "ACTIVO":
@@ -167,6 +185,7 @@ def login(
     return schemas.Token(
         access_token = token,
         token_type = "bearer",
+        role = user.rol.nombre_rol,
         user = build_usuario_out(user)
     )
 

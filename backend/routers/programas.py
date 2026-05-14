@@ -1,7 +1,7 @@
 from operator import mod
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.functions import mode
 
 import schemas
@@ -76,7 +76,7 @@ def update_programa(
     return programa
 
 
-router.delete("/{id}", status_code=204)
+@router.delete("/{id}", status_code=204)
 def delete_programa(
     id: int,
     current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR")),
@@ -94,6 +94,7 @@ def delete_programa(
 
 
 # -- PLAN ESTUDIO -----------------------------------------------------------
+
 @router.get("/{id}/plan", response_model=list[schemas.PlanEstudioOut])
 def get_plan(
         id: int,
@@ -104,7 +105,13 @@ def get_plan(
     if not programa:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Programa no encontrado")
 
-    plan = db.execute(select(models.PlanEstudio).where(models.PlanEstudio.id_programa == id).order_by(models.PlanEstudio.semestre)).scalars().all()
+    plan = db.execute(
+        select(models.PlanEstudio)
+        .options(joinedload(models.PlanEstudio.asignatura))
+        .where(models.PlanEstudio.id_programa == id)
+        .order_by(models.PlanEstudio.semestre)
+    ).scalars().all()
+    
     return plan
 
 

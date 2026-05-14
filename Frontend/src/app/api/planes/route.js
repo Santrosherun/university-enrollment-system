@@ -1,24 +1,36 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET(request) {
   const useMocks =
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
+  const { searchParams } = new URL(request.url);
+  const id_programa = searchParams.get("id_programa");
+
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for planes." },
-      { status: 501 },
-    );
+    // El backend usa la ruta /programas/{id}/plan
+    if (!id_programa) return Response.json({ items: [] });
+    
+    const res = await proxyToBackend(`/programas/${id_programa}/plan`);
+    if (!res.ok) return Response.json({ items: [] });
+
+    const data = await res.json();
+    
+    // Aplanamos el objeto para que el frontend lo entienda
+    const mapped = (Array.isArray(data) ? data : []).map(p => ({
+      ...p,
+      asignatura_nombre: p.asignatura?.nombre_asignatura || "Sin nombre",
+      asignatura_codigo: p.asignatura?.codigo_asignatura || "N/A",
+      creditos: p.creditos_plan || 0, // Usamos creditos_plan como valor principal
+      creditos_base: p.asignatura?.creditos || 0
+    }));
+
+    return Response.json({ items: mapped });
   }
 
-  const { searchParams } = new URL(request.url);
-  const id_programa = searchParams.get("id_programa") || undefined;
-
-  return Response.json(
-    { items: MockDb.listPlanes({ id_programa }) },
-    { status: 200 },
-  );
+  return Response.json({ items: MockDb.listPlanes({ id_programa }) });
 }
 
 export async function POST(request) {
@@ -26,48 +38,17 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for planes." },
-      { status: 501 },
-    );
-  }
-
+  const { searchParams } = new URL(request.url);
+  // Algunos forms podrían enviar el id_programa en el query o en el body
+  const queryId = searchParams.get("id_programa");
   const body = await request.json().catch(() => null);
-  const { id_programa, id_asignatura, semestre, creditos_plan, es_obligatoria } = body ?? {};
+  const id_programa = body?.id_programa || queryId;
 
-  if (!id_programa || !id_asignatura || !semestre) {
-    return Response.json(
-      { message: "id_programa, id_asignatura, semestre are required" },
-      { status: 400 },
-    );
+  if (!useMocks) {
+    if (!id_programa) return Response.json({ message: "ID Programa requerido" }, { status: 400 });
+    return proxyToBackend(`/programas/${id_programa}/plan`, "POST", body);
   }
 
-  const created = MockDb.createPlanEstudio({
-    id_programa,
-    id_asignatura,
-    semestre,
-    es_obligatoria
-  });
+  const created = MockDb.createPlanEstudio(body);
   return Response.json(created, { status: 201 });
 }
-
-export async function PUT(request) {
-  const useMocks =
-    process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
-    process.env.NEXT_PUBLIC_USE_MOCKS === "1";
-
-  if (!useMocks) return Response.json({ message: "Not configured" }, { status: 501 });
-
-  const body = await request.json().catch(() => null);
-  const { id_programa, id_asignatura } = body ?? {};
-  
-  if (!id_programa || !id_asignatura) {
-    return Response.json({ message: "Keys required" }, { status: 400 });
-  }
-
-  const updated = MockDb.updatePlanEstudio(id_programa, id_asignatura, body);
-  if (!updated) return Response.json({ message: "Not found" }, { status: 404 });
-  return Response.json(updated);
-}
-

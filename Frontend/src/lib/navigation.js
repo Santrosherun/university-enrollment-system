@@ -18,6 +18,11 @@ export const NAV_ITEMS = [
     roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
   },
   {
+    label: "Periodos académicos",
+    href: "/periodos",
+    roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
+  },
+  {
     label: "Planes de estudio",
     href: "/planes",
     roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
@@ -58,11 +63,6 @@ export const NAV_ITEMS = [
     roles: [Roles.ADMINISTRADOR, Roles.ASISTENTE],
   },
   {
-    label: "Volante de matrícula (PDF)",
-    href: "/volante",
-    roles: [Roles.ADMINISTRADOR, Roles.ASISTENTE],
-  },
-  {
     label: "Reportes",
     href: "/reportes",
     roles: [Roles.ADMINISTRADOR],
@@ -70,6 +70,11 @@ export const NAV_ITEMS = [
   {
     label: "Usuarios / Roles / Menús",
     href: "/admin/seguridad",
+    roles: [Roles.ADMINISTRADOR],
+  },
+  {
+    label: "Matriz RBAC",
+    href: "/permisos",
     roles: [Roles.ADMINISTRADOR],
   },
 ];
@@ -84,6 +89,11 @@ export const DASHBOARD_CARD_BY_HREF = {
     description:
       "Gestiona programas académicos, modalidades y su configuración general.",
     cta: "Ir a Programas",
+  },
+  "/periodos": {
+    description:
+      "Crea y configura los periodos académicos de matrícula, fechas y alcances temporales.",
+    cta: "Ir a Periodos",
   },
   "/planes": {
     description:
@@ -118,10 +128,6 @@ export const DASHBOARD_CARD_BY_HREF = {
     description: "Simula pago en línea o registro por caja.",
     cta: "Ir a Pagos",
   },
-  "/volante": {
-    description: "Visualiza y descarga el volante de matrícula en PDF.",
-    cta: "Ir al volante",
-  },
   "/reportes": {
     description: "Listados, ingresos esperados, cartera y pendientes.",
     cta: "Ir a Reportes",
@@ -129,6 +135,10 @@ export const DASHBOARD_CARD_BY_HREF = {
   "/admin/seguridad": {
     description: "Usuarios, roles y menús (solo administración).",
     cta: "Ir a Seguridad",
+  },
+  "/permisos": {
+    description: "Configura la matriz de permisos granular (Ver, Crear, Editar, Borrar) sobre cada menú del sistema.",
+    cta: "Ir a Matriz RBAC",
   },
 };
 

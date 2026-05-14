@@ -1,4 +1,5 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET(request, { params }) {
   const { id } = await params;
@@ -7,7 +8,7 @@ export async function GET(request, { params }) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json({ message: "Not configured" }, { status: 501 });
+    return proxyToBackend(`/asignaturas/${id}`);
   }
 
   const item = MockDb.getAsignatura(id);
@@ -22,11 +23,12 @@ export async function PUT(request, { params }) {
       process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
       process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
+    const body = await request.json().catch(() => null);
+
     if (!useMocks) {
-      return Response.json({ message: "Not configured" }, { status: 501 });
+      return proxyToBackend(`/asignaturas/${id}`, "PUT", body);
     }
 
-    const body = await request.json().catch(() => null);
     const updated = MockDb.updateAsignatura(id, body);
     if (!updated) return Response.json({ message: "Not found" }, { status: 404 });
     return Response.json(updated);
@@ -42,7 +44,7 @@ export async function DELETE(request, { params }) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json({ message: "Not configured" }, { status: 501 });
+    return proxyToBackend(`/asignaturas/${id}`, "DELETE");
   }
 
   const deleted = MockDb.deleteAsignatura(id);

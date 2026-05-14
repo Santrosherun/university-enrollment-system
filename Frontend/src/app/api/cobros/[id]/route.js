@@ -1,4 +1,5 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET(request, { params }) {
   const { id } = await params;
@@ -7,10 +8,7 @@ export async function GET(request, { params }) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for cobros." },
-      { status: 501 },
-    );
+    return proxyToBackend(`/volantes/${id}`);
   }
 
   const item = MockDb.getCobro(id);
@@ -28,10 +26,7 @@ export async function DELETE(request, { params }) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for cobros." },
-      { status: 501 },
-    );
+    return proxyToBackend(`/volantes/${id}`, "DELETE");
   }
 
   const deleted = MockDb.deleteCobro(id);

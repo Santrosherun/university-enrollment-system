@@ -1,4 +1,5 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET(request, { params }) {
   const { id } = await params;
@@ -7,10 +8,7 @@ export async function GET(request, { params }) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for codigos-detalle." },
-      { status: 501 },
-    );
+    return proxyToBackend(`/codigos-detalle/${id}`);
   }
 
   const item = MockDb.getCodigoDetalle(id);
@@ -27,16 +25,10 @@ export async function PUT(request, { params }) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for codigos-detalle." },
-      { status: 501 },
-    );
-  }
-
   const body = await request.json().catch(() => null);
-  if (!body) {
-    return Response.json({ message: "Body required" }, { status: 400 });
+
+  if (!useMocks) {
+    return proxyToBackend(`/codigos-detalle/${id}`, "PUT", body);
   }
 
   const updated = MockDb.updateCodigoDetalle(id, body);
@@ -54,10 +46,7 @@ export async function DELETE(request, { params }) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for codigos-detalle." },
-      { status: 501 },
-    );
+    return proxyToBackend(`/codigos-detalle/${id}`, "DELETE");
   }
 
   const deleted = MockDb.deleteCodigoDetalle(id);

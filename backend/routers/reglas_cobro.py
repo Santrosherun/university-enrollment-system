@@ -42,13 +42,13 @@ def create_regla(
         current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
         db: Session = Depends(database.get_db)
 ):
-    if data.modalidad_cobro not in ("GLOBAL", "POR_CREDITOS"):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Modalidad debe ser GLOBAL o POR_CREDITOS")
+    if data.modalidad_cobro not in ("GLOBAL", "CREDITOS"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Modalidad debe ser GLOBAL o CREDITOS")
 
     if data.modalidad_cobro == "GLOBAL" and data.valor_global is None:
         raise HTTPException(status_code=400, detail="GLOBAL requiere valor_global")
-    if data.modalidad_cobro == "POR_CREDITOS" and data.valor_credito is None:
-        raise HTTPException(status_code=400, detail="POR_CREDITOS requiere valor_credito")
+    if data.modalidad_cobro == "CREDITOS" and data.valor_credito is None:
+        raise HTTPException(status_code=400, detail="CREDITOS requiere valor_credito")
 
     exists = db.query(models.ReglaCobro).filter(
         models.ReglaCobro.modalidad_cobro == data.modalidad_cobro,

@@ -1,12 +1,18 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET() {
   const useMocks =
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!useMocks) return Response.json({ message: "Not implemented" }, { status: 501 });
-  
+  if (!useMocks) {
+    const res = await proxyToBackend("/asignaturas/");
+    if (!res.ok) return Response.json({ items: [] });
+    const data = await res.json();
+    return Response.json({ items: Array.isArray(data) ? data : [] });
+  }
+
   return Response.json({ items: MockDb.listAsignaturas() });
 }
 
@@ -15,9 +21,12 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!useMocks) return Response.json({ message: "Not implemented" }, { status: 501 });
+  const body = await request.json().catch(() => null);
 
-  const body = await request.json();
+  if (!useMocks) {
+    return proxyToBackend("/asignaturas/", "POST", body);
+  }
+
   const created = MockDb.createAsignatura(body);
   return Response.json(created, { status: 201 });
 }

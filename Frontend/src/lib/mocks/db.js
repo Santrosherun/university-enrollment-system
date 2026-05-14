@@ -154,6 +154,31 @@ export const MockDb = {
 
   listProgramas() { return clone(state.programa_academico); },
   listPeriodos() { return clone(state.periodo_academico); },
+  createPeriodo(input) {
+    const record = {
+      id_periodo: input.codigo_periodo,
+      codigo_periodo: input.codigo_periodo,
+      numero_periodo: Number(input.numero_periodo || 1),
+      anio: Number(input.anio || new Date().getFullYear()),
+      fecha_inicio: input.fecha_inicio,
+      fecha_fin: input.fecha_fin,
+      estado: input.estado || "ACTIVO"
+    };
+    state.periodo_academico.push(record);
+    return clone(record);
+  },
+  updatePeriodo(id, patch) {
+    const idx = state.periodo_academico.findIndex(p => String(p.id_periodo) === String(id) || p.codigo_periodo === id);
+    if (idx === -1) return null;
+    state.periodo_academico[idx] = { ...state.periodo_academico[idx], ...patch };
+    return clone(state.periodo_academico[idx]);
+  },
+  deletePeriodo(id) {
+    const idx = state.periodo_academico.findIndex(p => String(p.id_periodo) === String(id) || p.codigo_periodo === id);
+    if (idx === -1) return false;
+    state.periodo_academico.splice(idx, 1);
+    return true;
+  },
   getPrograma(id) {
     const item = state.programa_academico.find(p => p.id_programa === id);
     return item ? clone(item) : null;
@@ -358,14 +383,17 @@ export const MockDb = {
       if (mod === "GLOBAL") {
         valor = regla.valor_global;
       } else {
-        if (!data.asignaturas || data.asignaturas.length === 0) {
-           throw new Error("Debe seleccionar al menos una asignatura para el cobro por créditos.");
+        let creditosTotales = data.creditos || 0;
+        if (!creditosTotales && data.asignaturas && data.asignaturas.length > 0) {
+          creditosTotales = data.asignaturas.reduce((acc, asigId) => {
+            const asig = state.asignatura.find(a => a.id_asignatura === asigId);
+            return acc + (asig ? Number(asig.creditos || 0) : 0);
+          }, 0);
         }
-        const creditosTotales = data.asignaturas.reduce((acc, asigId) => {
-          const asig = state.asignatura.find(a => a.id_asignatura === asigId);
-          return acc + (asig ? asig.creditos : 0);
-        }, 0);
-        valor = regla.valor_credito * creditosTotales;
+        if (!creditosTotales) {
+           throw new Error("Debe seleccionar al menos una asignatura o especificar los créditos a cursar.");
+        }
+        valor = Number(regla.valor_credito || 0) * creditosTotales;
       }
     }
 

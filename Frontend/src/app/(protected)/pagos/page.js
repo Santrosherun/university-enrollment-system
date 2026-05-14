@@ -23,7 +23,7 @@ export default function PagosPage() {
 
   const [formData, setFormData] = useState({
     id_volante_matricula: "",
-    id_codigo_detalle: "cd_003",
+    id_codigo_detalle: "",
     valor_pagado: 0,
     referencia_pago: "",
     canal_pago: "TRANSFERENCIA",
@@ -73,7 +73,10 @@ export default function PagosPage() {
         checkRes(resBalance)
       ]);
 
-      setCobrosPendientes(jsonCobros?.items?.filter(c => c.estado === "GENERADO") ?? []);
+      const estIdNum = Number(estId);
+      setCobrosPendientes(
+        jsonCobros?.items?.filter(c => c.estado === "GENERADO" && Number(c.id_estudiante) === estIdNum) ?? []
+      );
       setBalanceData(jsonBalance);
     } catch (err) {
       console.error(err);
@@ -94,10 +97,12 @@ export default function PagosPage() {
 
   async function handleSelectCobro(e) {
     const id = e.target.value;
-    const cobro = cobrosPendientes.find((c) => c.id_volante === id);
+    const cobro = cobrosPendientes.find((c) => String(c.id_volante) === String(id));
+    const firstCode = codigosDetalle.find(c => c.grupo === "PAGO" || c.tipo_codigo === "PAGO")?.id_codigo_detalle ?? "";
     setFormData((prev) => ({
       ...prev,
       id_volante_matricula: id,
+      id_codigo_detalle: prev.id_codigo_detalle || firstCode,
       valor_pagado: cobro ? cobro.total : 0,
     }));
   }
@@ -109,13 +114,18 @@ export default function PagosPage() {
     setSubmitting(true);
     setMessage(null);
     try {
+      const payloadBody = {
+        id_estudiante: Number(selectedEst),
+        ...formData,
+        id_volante_matricula: Number(formData.id_volante_matricula),
+        valor_pagado: Number(formData.valor_pagado),
+        id_codigo_detalle: formData.id_codigo_detalle ? Number(formData.id_codigo_detalle) : null,
+      };
+
       const res = await fetch("/api/recaudos", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          id_estudiante: selectedEst,
-          ...formData,
-        }),
+        body: JSON.stringify(payloadBody),
       });
 
       if (!res.ok) {
@@ -176,7 +186,7 @@ export default function PagosPage() {
               <h3 className="text-sm font-semibold text-foreground">Deudas Pendientes</h3>
               {loading ? (
                 <div className="mt-4 text-xs text-app-muted">Consultando cartera...</div>
-              ) : (balanceData?.summary?.balance ?? 0) > 0 ? (
+              ) : ((balanceData?.summary?.balance ?? balanceData?.balance ?? 0) > 0 || cobrosPendientes.length > 0) ? (
                 <div className="mt-4 space-y-3">
                   {cobrosPendientes.map((c) => (
                     <div key={c.id_volante} className="flex items-center justify-between rounded-xl border border-app-border/60 bg-zinc-50 p-3">
@@ -193,7 +203,7 @@ export default function PagosPage() {
                   <div className="pt-2 border-t border-app-border mt-4 flex justify-between items-end">
                     <span className="text-xs font-semibold text-app-muted">TOTAL DEUDA ACUMULADA:</span>
                     <span className="text-xl font-black text-foreground">
-                      {formatCurrency(balanceData?.summary?.balance ?? 0)}
+                      {formatCurrency(balanceData?.summary?.balance ?? balanceData?.balance ?? cobrosPendientes.reduce((acc, curr) => acc + curr.total, 0))}
                     </span>
                   </div>
                 </div>
@@ -240,8 +250,11 @@ export default function PagosPage() {
                 className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-50"
                 required
               >
-                {codigosDetalle.filter(c => c.tipo_codigo === "PAGO").map(c => (
-                  <option key={c.id_codigo_detalle} value={c.id_codigo_detalle}>{c.nombre_codigo}</option>
+                <option value="">-- Selecciona concepto --</option>
+                {codigosDetalle.filter(c => c.grupo === "PAGO" || c.tipo_codigo === "PAGO").map(c => (
+                  <option key={c.id_codigo_detalle} value={c.id_codigo_detalle}>
+                    {c.descripcion || c.nombre_codigo}
+                  </option>
                 ))}
               </select>
             </div>

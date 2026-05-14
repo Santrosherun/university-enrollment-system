@@ -1,23 +1,19 @@
-import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
+/**
+ * Proxy para obtener la cuenta corriente del estudiante.
+ * Soporta filtrado opcional por id_periodo.
+ */
 export async function GET(request, { params }) {
   const { id } = await params;
-  console.log("API: FETCHING CC FOR STUDENT:", id);
-  const useMocks =
-    process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
-    process.env.NEXT_PUBLIC_USE_MOCKS === "1";
+  const { searchParams } = new URL(request.url);
+  const id_periodo = searchParams.get("id_periodo");
 
-  if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for cuenta-corriente." },
-      { status: 501 },
-    );
+  // Construimos el path relativo que espera el backend FastAPI
+  let path = `/cuentas/estudiante/${id}`;
+  if (id_periodo) {
+    path += `/periodo/${id_periodo}`;
   }
 
-  const data = MockDb.getCuentaCorriente(id);
-  if (!data) {
-    return Response.json({ message: "Student not found" }, { status: 404 });
-  }
-
-  return Response.json(data, { status: 200 });
+  return proxyToBackend(path);
 }

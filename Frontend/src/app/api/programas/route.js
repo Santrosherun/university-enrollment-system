@@ -1,4 +1,5 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export async function GET() {
   const useMocks =
@@ -6,10 +7,10 @@ export async function GET() {
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for programas." },
-      { status: 501 },
-    );
+    const res = await proxyToBackend("/programas/");
+    if (!res.ok) return Response.json({ items: [] });
+    const data = await res.json();
+    return Response.json({ items: Array.isArray(data) ? data : [] });
   }
 
   return Response.json({ items: MockDb.listProgramas() }, { status: 200 });
@@ -20,14 +21,12 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
+  const body = await request.json().catch(() => null);
+
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for programas." },
-      { status: 501 },
-    );
+    return proxyToBackend("/programas/", "POST", body);
   }
 
-  const body = await request.json().catch(() => null);
   const { codigo_programa, nombre_programa, modalidad_programa, estado } = body ?? {};
 
   if (!codigo_programa || !nombre_programa || !modalidad_programa) {
@@ -40,4 +39,3 @@ export async function POST(request) {
   const created = MockDb.createPrograma({ codigo_programa, nombre_programa, modalidad_programa, estado });
   return Response.json(created, { status: 201 });
 }
-

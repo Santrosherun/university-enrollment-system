@@ -1,25 +1,19 @@
 import { MockDb } from "@/lib/mocks/db";
+import { proxyToBackend } from "@/lib/api-proxy";
 
-export async function GET(request) {
+export async function GET() {
   const useMocks =
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
   if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for cobros." },
-      { status: 501 },
-    );
+    const res = await proxyToBackend("/volantes/");
+    if (!res.ok) return Response.json({ items: [] });
+    const data = await res.json();
+    return Response.json({ items: Array.isArray(data) ? data : [] });
   }
 
-  const { searchParams } = new URL(request.url);
-  const estudiante_id = searchParams.get("estudianteId");
-  const periodo_id = searchParams.get("periodo");
-
-  return Response.json(
-    { items: MockDb.listVolantes({ estudiante_id, periodo_id }) },
-    { status: 200 },
-  );
+  return Response.json({ items: MockDb.listCobros() });
 }
 
 export async function POST(request) {
@@ -27,35 +21,12 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
     process.env.NEXT_PUBLIC_USE_MOCKS === "1";
 
-  if (!useMocks) {
-    return Response.json(
-      { message: "Backend not configured yet for cobros." },
-      { status: 501 },
-    );
-  }
-
   const body = await request.json().catch(() => null);
-  const { id_estudiante, id_periodo, modalidad_cobro, id_codigo_detalle, valor, asignaturas } = body ?? {};
 
-  if (!id_estudiante || !id_periodo) {
-    return Response.json(
-      { message: "id_estudiante and id_periodo are required" },
-      { status: 400 },
-    );
+  if (!useMocks) {
+    return proxyToBackend("/volantes/", "POST", body);
   }
 
-  try {
-    const created = MockDb.generateVolante({ 
-      id_estudiante, 
-      id_periodo, 
-      modalidad_cobro: modalidad_cobro || "GLOBAL",
-      id_codigo_detalle,
-      valor,
-      asignaturas,
-      id_usuario: "user_admin" 
-    });
-    return Response.json(created, { status: 201 });
-  } catch (err) {
-    return Response.json({ message: err.message }, { status: 400 });
-  }
+  const created = MockDb.createCobro(body);
+  return Response.json(created, { status: 201 });
 }
