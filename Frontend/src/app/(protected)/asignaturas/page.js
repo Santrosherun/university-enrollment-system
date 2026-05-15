@@ -97,7 +97,10 @@ export default function AsignaturasPage() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Esta asignatura no puede ser eliminada porque está siendo usada en un plan de estudio.");
+        if (res.status === 403) {
+          throw new Error("No tienes permisos suficientes para eliminar este registro.");
+        }
+        throw new Error(errData.message || "Esta asignatura no puede ser eliminada porque está siendo usada en un plan de estudio u otro registro vinculado.");
       }
       await loadData();
       setDeleteTarget(null);

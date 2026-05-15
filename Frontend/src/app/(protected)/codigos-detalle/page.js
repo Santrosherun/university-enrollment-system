@@ -29,39 +29,6 @@ function Modal({ title, hint, children, onClose }) {
   );
 }
 
-function ConfirmModal({ title, description, confirmLabel, onConfirm, onClose }) {
-  const [status, setStatus] = useState("idle");
-
-  async function handleConfirm() {
-    setStatus("loading");
-    try {
-      await onConfirm();
-      onClose();
-    } catch {
-      setStatus("idle");
-    }
-  }
-
-  return (
-    <Modal title={title} onClose={onClose}>
-      <div className="text-sm leading-relaxed text-app-muted">{description}</div>
-      <div className="mt-6 flex justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button
-          type="button"
-          variant="danger"
-          disabled={status === "loading"}
-          onClick={handleConfirm}
-        >
-          {status === "loading" ? "Eliminando..." : confirmLabel}
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
 const GRUPOS = ["COBRO", "PAGO"];
 
 export default function CodigosDetallePage() {
@@ -73,7 +40,6 @@ export default function CodigosDetallePage() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const filtered = useMemo(() => {
     let list = items;
@@ -153,24 +119,6 @@ export default function CodigosDetallePage() {
         throw new Error(payload?.message ?? "Error al cambiar estado");
       }
       await load();
-    } catch (err) {
-      alert(err.message);
-    }
-  }
-
-  async function removeCodigo(item) {
-    try {
-      const res = await fetch(`/api/codigos-detalle/${item.id_codigo_detalle}`, { 
-        method: "DELETE" 
-      });
-      
-      if (!res.ok && res.status !== 204) {
-        const payload = await res.json().catch(() => null);
-        throw new Error(payload?.message ?? payload?.detail ?? "No se puede eliminar este código porque ya tiene movimientos asociados.");
-      }
-      
-      await load();
-      setDeleteTarget(null);
     } catch (err) {
       alert(err.message);
     }
@@ -304,13 +252,6 @@ export default function CodigosDetallePage() {
                         >
                           {item.estado === "ACTIVO" ? "Desactivar" : "Activar"}
                         </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeleteTarget(item)}
-                        >
-                          Eliminar
-                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -337,23 +278,6 @@ export default function CodigosDetallePage() {
             setEditing(null);
           }}
           onSave={save}
-        />
-      ) : null}
-
-      {deleteTarget ? (
-        <ConfirmModal
-          title="Eliminar código"
-          description={
-            <span>
-              ¿Seguro que quieres eliminar el código{" "}
-              <strong className="text-foreground">
-                {deleteTarget.codigo}
-              </strong>? Esta acción no se puede deshacer y fallará si ya existen transacciones vinculadas.
-            </span>
-          }
-          confirmLabel="Sí, eliminar"
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => removeCodigo(deleteTarget)}
         />
       ) : null}
     </div>

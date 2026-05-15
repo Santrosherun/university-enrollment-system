@@ -29,39 +29,6 @@ function Modal({ title, hint, children, onClose }) {
   );
 }
 
-function ConfirmModal({ title, description, confirmLabel, onConfirm, onClose }) {
-  const [status, setStatus] = useState("idle");
-
-  async function handleConfirm() {
-    setStatus("loading");
-    try {
-      await onConfirm();
-      onClose();
-    } catch {
-      setStatus("idle");
-    }
-  }
-
-  return (
-    <Modal title={title} onClose={onClose}>
-      <div className="text-sm leading-relaxed text-app-muted">{description}</div>
-      <div className="mt-6 flex justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button
-          type="button"
-          variant="danger"
-          disabled={status === "loading"}
-          onClick={handleConfirm}
-        >
-          {status === "loading" ? "Eliminando..." : confirmLabel}
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
 export default function EstudiantesPage() {
   const [items, setItems] = useState([]);
   const [programas, setProgramas] = useState([]);
@@ -72,7 +39,6 @@ export default function EstudiantesPage() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const filtered = useMemo(() => {
     let list = items;
@@ -146,15 +112,6 @@ export default function EstudiantesPage() {
     await load();
     setOpen(false);
     setEditing(null);
-  }
-
-  async function removeEstudiante(item) {
-    const res = await fetch(`/api/estudiantes/${item.id_estudiante}`, { method: "DELETE" });
-    if (!res.ok && res.status !== 204) {
-      const payload = await res.json().catch(() => null);
-      throw new Error(payload?.message ?? "No se puede eliminar este estudiante porque tiene registros académicos o financieros vinculados.");
-    }
-    await load();
   }
 
   const getProgName = (id) => programas.find((p) => p.id_programa === id)?.nombre_programa ?? "N/A";
@@ -262,13 +219,6 @@ export default function EstudiantesPage() {
                           >
                             Editar
                           </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => setDeleteTarget(item)}
-                          >
-                            Eliminar
-                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -297,24 +247,6 @@ export default function EstudiantesPage() {
             setEditing(null);
           }}
           onSave={save}
-        />
-      ) : null}
-
-      {deleteTarget ? (
-        <ConfirmModal
-          title="Eliminar estudiante"
-          description={
-            <span>
-              ¿Seguro que quieres eliminar a{" "}
-              <strong className="text-foreground">
-                {deleteTarget.primer_nombre} {deleteTarget.primer_apellido}
-              </strong>
-              ? Esta acción fallará si el estudiante tiene una matrícula generada.
-            </span>
-          }
-          confirmLabel="Sí, eliminar"
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => removeEstudiante(deleteTarget)}
         />
       ) : null}
     </div>
@@ -362,7 +294,7 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
   return (
     <Modal
       title={title}
-      hint="Completa la ficha técnica del estudiante."
+      hint="Completa the form."
       onClose={onClose}
     >
       <form onSubmit={submit} className="space-y-4">

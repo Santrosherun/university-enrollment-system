@@ -140,7 +140,10 @@ export default function ProgramasPage() {
     const res = await fetch(`/api/programas/${item.id_programa}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) {
       const payload = await res.json().catch(() => null);
-      throw new Error(payload?.message ?? "No se puede eliminar este programa porque tiene datos asociados (estudiantes o planes de estudio).");
+      if (res.status === 403) {
+        throw new Error("No tienes permisos suficientes para eliminar este registro.");
+      }
+      throw new Error(payload?.message || "No se puede eliminar este programa porque tiene datos asociados (estudiantes o planes de estudio).");
     }
     await load();
   }

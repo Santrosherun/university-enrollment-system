@@ -29,39 +29,6 @@ function Modal({ title, hint, children, onClose }) {
   );
 }
 
-function ConfirmModal({ title, description, confirmLabel, onConfirm, onClose }) {
-  const [status, setStatus] = useState("idle");
-
-  async function handleConfirm() {
-    setStatus("loading");
-    try {
-      await onConfirm();
-      onClose();
-    } catch {
-      setStatus("idle");
-    }
-  }
-
-  return (
-    <Modal title={title} onClose={onClose}>
-      <div className="text-xs leading-relaxed text-app-muted">{description}</div>
-      <div className="mt-6 flex justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button
-          type="button"
-          variant="danger"
-          disabled={status === "loading"}
-          onClick={handleConfirm}
-        >
-          {status === "loading" ? "Eliminando..." : confirmLabel}
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
 export default function PeriodosPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +37,6 @@ export default function PeriodosPage() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -136,16 +102,6 @@ export default function PeriodosPage() {
       body: JSON.stringify({ estado: nuevoEstado }),
     });
     if (!res.ok) return;
-    await load();
-  }
-
-  async function removePeriodo(item) {
-    const idParam = item.id_periodo || item.codigo_periodo;
-    const res = await fetch(`/api/periodos/${idParam}`, { method: "DELETE" });
-    if (!res.ok && res.status !== 204) {
-      const payload = await res.json().catch(() => null);
-      throw new Error(payload?.message ?? "No se puede eliminar este periodo porque ya tiene registros académicos vinculados.");
-    }
     await load();
   }
 
@@ -260,24 +216,17 @@ export default function PeriodosPage() {
                         >
                           {p.estado === "ACTIVO" ? "Desactivar" : "Activar"}
                         </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeleteTarget(p)}
-                        >
-                          Eliminar
-                        </Button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 ? (
+                {filtered.length === 0 && (
                   <tr>
                     <td className="py-10 text-center text-xs text-app-muted" colSpan={7}>
                       No se encontraron periodos académicos registrados.
                     </td>
                   </tr>
-                ) : null}
+                )}
               </tbody>
             </table>
           </div>
@@ -293,22 +242,6 @@ export default function PeriodosPage() {
             setEditing(null);
           }}
           onSave={save}
-        />
-      ) : null}
-
-      {deleteTarget ? (
-        <ConfirmModal
-          title="Eliminar Periodo Académico"
-          description={
-            <span>
-              ¿Estás seguro de eliminar el periodo{" "}
-              <strong className="text-foreground">{deleteTarget.codigo_periodo}</strong>? 
-              La operación fallará si ya existen inscripciones o reglas vinculadas.
-            </span>
-          }
-          confirmLabel="Sí, eliminar"
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => removePeriodo(deleteTarget)}
         />
       ) : null}
     </div>
@@ -351,7 +284,7 @@ function PeriodoFormModal({ title, initial, onClose, onSave }) {
         estado
       });
     } catch (err) {
-      setError(err?.message ?? "Error inesperado al guardar el periodo.");
+      setError(err?.message ?? "Error inesperado al guardar the period.");
       setStatus("idle");
     }
   }
@@ -359,7 +292,7 @@ function PeriodoFormModal({ title, initial, onClose, onSave }) {
   return (
     <Modal
       title={title}
-      hint="Define el código unificado, fechas límite y ciclo semestral."
+      hint="Define the code, dates and cycle."
       onClose={onClose}
     >
       <form onSubmit={submit} className="space-y-4">
