@@ -14,7 +14,8 @@ export async function GET(request) {
   }
 
   if (!useMocks) {
-    return proxyToBackend(`/reportes/${endpoint}`);
+    const queryString = request.url.split('?')[1] || '';
+    return proxyToBackend(`/reportes/${endpoint}${queryString ? `?${queryString}` : ''}`);
   }
 
   // Si usamos mocks, retornamos arreglos vacíos o un mock simulado simple para que no rompa la UI

@@ -58,7 +58,7 @@ export default function ReportesPage() {
       ];
 
       const viewResponses = await Promise.all(
-        endpoints.map(ep => fetch(`/api/reportes/vistas?endpoint=${ep}`).then(r => r.json().catch(() => [])))
+        endpoints.map(ep => fetch(`/api/reportes/vistas?endpoint=${ep}&periodo=${periodo}`).then(r => r.json().catch(() => [])))
       );
 
       setResumenEstudiantes(Array.isArray(viewResponses[0]) ? viewResponses[0] : []);

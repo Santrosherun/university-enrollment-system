@@ -18,42 +18,72 @@ def get_balance_cuentas(
 
 @router.get("/resumen-estudiantes", response_model=list[schemas.ResumenEstudianteOut])
 def get_resumen_estudiantes(
+    periodo: str = "",
     current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
-    result = db.execute(text("SELECT * FROM vista_resumen_estudiantes")).all()
+    query = "SELECT * FROM vista_resumen_estudiantes"
+    params = {}
+    if periodo:
+        query += " WHERE codigo_periodo = :p"
+        params["p"] = periodo
+    result = db.execute(text(query), params).all()
     return result
 
 @router.get("/ingreso-esperado", response_model=list[schemas.IngresoEsperadoOut])
 def get_ingreso_esperado(
+    periodo: str = "",
     current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
-    result = db.execute(text("SELECT * FROM vista_ingreso_esperado")).all()
+    query = "SELECT * FROM vista_ingreso_esperado"
+    params = {}
+    if periodo:
+        query += " WHERE codigo_periodo = :p"
+        params["p"] = periodo
+    result = db.execute(text(query), params).all()
     return result
 
 @router.get("/pendientes-pago", response_model=list[schemas.EstudiantePendienteOut])
 def get_pendientes_pago(
+    periodo: str = "",
     current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
-    result = db.execute(text("SELECT * FROM vista_estudiantes_pendientes_pago")).all()
+    query = "SELECT * FROM vista_estudiantes_pendientes_pago"
+    params = {}
+    if periodo:
+        query += " WHERE codigo_periodo = :p"
+        params["p"] = periodo
+    result = db.execute(text(query), params).all()
     return result
 
 @router.get("/ingreso-real", response_model=list[schemas.IngresoRealOut])
 def get_ingreso_real(
+    periodo: str = "",
     current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
-    result = db.execute(text("SELECT * FROM vista_ingreso_real")).all()
+    query = "SELECT * FROM vista_ingreso_real"
+    params = {}
+    if periodo:
+        query += " WHERE codigo_periodo = :p"
+        params["p"] = periodo
+    result = db.execute(text(query), params).all()
     return result
 
 @router.get("/creditos-financieros", response_model=list[schemas.CreditoFinancieroOut])
 def get_creditos_financieros(
+    periodo: str = "",
     current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
-    result = db.execute(text("SELECT * FROM vista_creditos_financieros")).all()
+    query = "SELECT * FROM vista_creditos_financieros"
+    params = {}
+    if periodo:
+        query += " WHERE codigo_periodo = :p"
+        params["p"] = periodo
+    result = db.execute(text(query), params).all()
     return result
 
 @router.get("/dashboard")
