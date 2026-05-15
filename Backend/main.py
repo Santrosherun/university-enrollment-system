@@ -9,7 +9,7 @@ app  = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000",
-    "https://university-enrollment-system.vercel.app/"], # Front end
+    "https://university-enrollment-system.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
