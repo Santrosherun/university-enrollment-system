@@ -181,19 +181,27 @@ def create_mass_volantes(
 
     created_count = 0
     for est in estudiantes:
-        # Bloquear cuenta
+        # 1. Bloquear/Crear cuenta corriente (Igual que en individual)
         cuenta = db.query(models.CuentaCorriente).filter(
             models.CuentaCorriente.id_estudiante == est.id_estudiante,
             models.CuentaCorriente.id_periodo == data.id_periodo
         ).with_for_update().first()
 
+        if not cuenta:
+            cuenta = models.CuentaCorriente(id_estudiante=est.id_estudiante, id_periodo=data.id_periodo)
+            db.add(cuenta)
+            db.flush()
+
+        # 2. Verificar si ya tiene volante ACTIVO
         exists = db.query(models.VolanteMatricula).filter(
             models.VolanteMatricula.id_estudiante == est.id_estudiante,
             models.VolanteMatricula.id_periodo == data.id_periodo,
+            models.VolanteMatricula.modalidad_cobro.in_(["GLOBAL", "CREDITOS"]),
             models.VolanteMatricula.estado != "ANULADO"
         ).first()
         if exists: continue
 
+        # 3. Buscar regla de cobro GLOBAL
         regla = db.query(models.ReglaCobro).filter(
             models.ReglaCobro.id_programa == est.id_programa,
             models.ReglaCobro.id_periodo == data.id_periodo,
@@ -203,8 +211,9 @@ def create_mass_volantes(
 
         if not regla: continue
 
+        # 4. Crear volante con número único (incluyendo hora para evitar colisiones)
         volante = models.VolanteMatricula(
-            numero_volante = f"VOL-M-{datetime.now().strftime('%Y%m%d')}-{est.id_estudiante}",
+            numero_volante = f"VOL-M-{datetime.now().strftime('%Y%m%d%H%M%S')}-{est.id_estudiante}",
             semestre_a_cursar = 1,
             generacion_tipo = "MASIVA",
             modalidad_cobro = "GLOBAL",
