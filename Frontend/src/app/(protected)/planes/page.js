@@ -301,11 +301,15 @@ function PlanFormModal({
     setStatus("loading");
     setError(null);
     try {
+      // Buscar la asignatura seleccionada para obtener de forma garantizada su valor nativo de créditos
+      const targetAsig = asignaturas.find(a => String(a.id_asignatura) === String(id_asignatura));
+      const finalCreditos = targetAsig ? targetAsig.creditos : Number(creditos_plan || initial?.creditos || 3);
+
       await onSave({
         id_programa,
         id_asignatura: Number(id_asignatura),
         semestre: Number(semestre),
-        creditos_plan: Number(creditos_plan),
+        creditos_plan: finalCreditos,
         es_obligatoria
       });
     } catch (err) {
@@ -313,6 +317,10 @@ function PlanFormModal({
       setStatus("idle");
     }
   }
+
+  // Extraer valor referencial para mostrar la insignia en caliente
+  const mappedAsig = asignaturas.find(a => String(a.id_asignatura) === String(id_asignatura));
+  const currentCrDisplay = mappedAsig?.creditos || initial?.creditos || creditos_plan || "—";
 
   return (
     <Modal title={initial ? "Editar asignatura en plan" : "Agregar asignatura al plan"} onClose={onClose}>
@@ -366,15 +374,10 @@ function PlanFormModal({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground">Créditos en este plan</label>
-            <input
-              type="number"
-              min="1"
-              value={creditos_plan}
-              onChange={(e) => setCreditos(e.target.value)}
-              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
-              required
-            />
+            <label className="text-sm font-medium text-foreground">Créditos (Automático)</label>
+            <div className="w-full rounded-xl border border-app-border/40 bg-zinc-50 px-3 py-2.5 text-sm font-bold text-app-muted select-none">
+              {currentCrDisplay} cr asignados
+            </div>
           </div>
         </div>
 

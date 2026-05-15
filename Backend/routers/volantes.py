@@ -18,6 +18,11 @@ def get_volantes(
     volantes = db.query(models.VolanteMatricula).all()
     for v in volantes:
         v.total = sum(d.cantidad * d.valor_unitario for d in v.detalles)
+        pagado = db.query(func.sum(models.Pago.valor_pagado)).filter(
+            models.Pago.id_volante_matricula == v.id_volante,
+            models.Pago.estado_pago == "APROBADO"
+        ).scalar() or 0
+        v.saldo_pendiente = v.total - pagado
         v.estudiante_nombre = f"{v.estudiante.primer_nombre} {v.estudiante.primer_apellido}"
     return volantes
 
@@ -31,6 +36,11 @@ def get_volante(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Volante no encontrado")
     
     volante.total = sum(d.cantidad * d.valor_unitario for d in volante.detalles)
+    pagado = db.query(func.sum(models.Pago.valor_pagado)).filter(
+        models.Pago.id_volante_matricula == volante.id_volante,
+        models.Pago.estado_pago == "APROBADO"
+    ).scalar() or 0
+    volante.saldo_pendiente = volante.total - pagado
     volante.estudiante_nombre = f"{volante.estudiante.primer_nombre} {volante.estudiante.primer_apellido}"
     
     return volante
@@ -223,6 +233,11 @@ def get_volante_pdf(
         raise HTTPException(404, "Volante no encontrado")
 
     total = sum(d.cantidad * d.valor_unitario for d in volante.detalles)
+    pagado = db.query(func.sum(models.Pago.valor_pagado)).filter(
+        models.Pago.id_volante_matricula == volante.id_volante,
+        models.Pago.estado_pago == "APROBADO"
+    ).scalar() or 0
+    saldo = total - pagado
     
     pdf_data = {
         "numero_volante": volante.numero_volante,
@@ -231,6 +246,8 @@ def get_volante_pdf(
         "programa": volante.programa.nombre_programa,
         "periodo": volante.periodo.codigo_periodo,
         "total": float(total),
+        "pagado": float(pagado),
+        "saldo": float(saldo),
         "fecha_impresion": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "detalles": [
             {

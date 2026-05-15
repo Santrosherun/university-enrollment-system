@@ -76,16 +76,31 @@ def require_role(*roles: str):
     return dependency
 
 
-def build_usuario_out(usuario: models.Usuario):
+def build_usuario_out(usuario: models.Usuario, db: Session):
+    # Obtener rutas permitidas dinámicamente desde la matriz RBAC
+    permisos = db.query(models.Menu.ruta).join(
+        models.Permiso, models.Permiso.id_menu == models.Menu.id_menu
+    ).filter(
+        models.Permiso.id_rol == usuario.id_rol,
+        models.Permiso.puede_ver == True
+    ).all()
+    
+    allowed_routes = [p.ruta for p in permisos if p.ruta]
+    # El dashboard siempre es permitido si tiene acceso al sistema
+    if "/dashboard" not in allowed_routes:
+        allowed_routes.append("/dashboard")
+
     return schemas.UsuarioOut(
         id_usuario          = usuario.id_usuario,
         username            = usuario.username,
         estado              = usuario.estado,
         correo_notificacion = usuario.correo_notificacion,
+        id_rol              = usuario.id_rol,
         nombre_rol          = usuario.rol.nombre_rol,
         primer_nombre       = usuario.persona.primer_nombre,
         primer_apellido     = usuario.persona.primer_apellido,
         correo_personal     = usuario.persona.correo_personal,
+        allowed_routes      = allowed_routes
     )
  
 
@@ -159,7 +174,7 @@ def register(
         rol=data.nombre_rol
     )
 
-    return build_usuario_out(usuario)
+    return build_usuario_out(usuario, db)
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -186,10 +201,10 @@ def login(
         access_token = token,
         token_type = "bearer",
         role = user.rol.nombre_rol,
-        user = build_usuario_out(user)
+        user = build_usuario_out(user, db)
     )
 
 
 @router.get("/me", response_model=schemas.UsuarioOut)
-def me(user: models.Usuario = Depends(get_current_user)):
-    return build_usuario_out(user)
+def me(user: models.Usuario = Depends(get_current_user), db: Session = Depends(database.get_db)):
+    return build_usuario_out(user, db)

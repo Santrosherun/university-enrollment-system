@@ -83,6 +83,11 @@ export function allowedNavItemsForRole(role) {
   return NAV_ITEMS.filter((item) => item.roles.includes(role));
 }
 
+export function filterNavItemsByRoutes(allowedRoutes) {
+  if (!allowedRoutes || allowedRoutes.length === 0) return [NAV_ITEMS[0]];
+  return NAV_ITEMS.filter((item) => allowedRoutes.includes(item.href));
+}
+
 /** Texto y CTA para las tarjetas del dashboard (misma lista de rutas que el menú). */
 export const DASHBOARD_CARD_BY_HREF = {
   "/programas": {

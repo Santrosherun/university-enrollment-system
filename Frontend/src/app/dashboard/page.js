@@ -4,6 +4,7 @@ import {
   Roles,
   dashboardCardMetaForHref,
   dashboardNavItemsForRole,
+  filterNavItemsByRoutes,
 } from "@/lib/navigation";
 import { MockDb } from "@/lib/mocks/db";
 
@@ -68,38 +69,7 @@ function safeRole(value) {
   return Object.values(Roles).includes(value) ? value : null;
 }
 
-async function getActiveUserRealName(tokenValue, currentRole, rawNameCookie) {
-  if (rawNameCookie) return rawNameCookie;
 
-  const useMocks =
-    process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
-    process.env.NEXT_PUBLIC_USE_MOCKS === "1";
-
-  if (useMocks) {
-    const list = MockDb.listUsuarios ? MockDb.listUsuarios() : [];
-    const targetRole = currentRole === "ADMINISTRADOR" ? "ADMIN" : currentRole;
-    const found = list.find(u => u.rol === targetRole || u.rol === currentRole);
-    if (found && found.nombre) return found.nombre;
-  } else if (tokenValue) {
-    try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const res = await fetch(`${apiBaseUrl}/auth/me`, {
-        headers: { "Authorization": `Bearer ${tokenValue}` },
-        cache: "no-store"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.primer_nombre) {
-          return `${data.primer_nombre} ${data.primer_apellido || ""}`.trim();
-        }
-      }
-    } catch (err) {
-      // Ignorar fallo de red y usar fallback
-    }
-  }
-
-  return currentRole ? currentRole.charAt(0) + currentRole.slice(1).toLowerCase() : "Usuario";
-}
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -108,11 +78,34 @@ export default async function DashboardPage() {
   const tokenVal = cookieStore.get("ues_session")?.value;
   const role = safeRole(rawRole);
   
-  // Consulta exhaustiva: extrae el nombre real directamente desde la base de datos o el token si falta en la cookie
-  const userName = await getActiveUserRealName(tokenVal, role, rawName);
-  const navItems = dashboardNavItemsForRole(role);
+  // Consulta exhaustiva: extrae el nombre real y los permisos directamente desde la base de datos
+  let allowedRoutes = [];
+  let userName = rawName || (role ? role.charAt(0) + role.slice(1).toLowerCase() : "Usuario");
 
-  // Clasificar módulos por categorías para una barra/malla independiente altamente estructurada
+  if (tokenVal && process.env.NEXT_PUBLIC_API_URL) {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        headers: { "Authorization": `Bearer ${tokenVal}` },
+        cache: "no-store"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        allowedRoutes = data.allowed_routes || [];
+        if (data.primer_nombre) {
+          userName = `${data.primer_nombre} ${data.primer_apellido || ""}`.trim();
+        }
+      }
+    } catch (err) {
+      console.error("Dashboard: Error fetching dynamic permissions:", err);
+    }
+  }
+
+  // Si no hay rutas dinámicas (ej: modo offline o error), usamos el fallback por rol
+  const navItems = allowedRoutes.length > 0 
+    ? filterNavItemsByRoutes(allowedRoutes).filter(i => i.href !== "/dashboard")
+    : dashboardNavItemsForRole(role);
+
+  // Clasificar módulos por categorías
   const academicItems = navItems.filter(i => ["/programas", "/periodos", "/planes", "/asignaturas"].includes(i.href));
   const studentItems = navItems.filter(i => ["/estudiantes", "/cuenta-corriente"].includes(i.href));
   const financeItems = navItems.filter(i => ["/codigos-detalle", "/reglas-cobro", "/cobros", "/pagos"].includes(i.href));

@@ -46,12 +46,12 @@ class PasswordUpdate(BaseModel):
 class UsuarioOut(UsuarioBase):
     id_usuario: int
     estado: str
+    id_rol: int
     nombre_rol: str
-    
-    # Información aplanada de la persona para facilitar el consumo en frontend
     primer_nombre: str
     primer_apellido: str
     correo_personal: str
+    allowed_routes: list[str] = []
 
     class Config:
         from_attributes = True
@@ -301,6 +301,7 @@ class VolanteOut(BaseModel):
     id_periodo: int
     estudiante_nombre: Optional[str] = None
     total: Decimal = 0
+    saldo_pendiente: Decimal = 0
     detalles: list[DetalleVolanteOut] = []
 
     class Config:

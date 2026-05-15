@@ -41,13 +41,40 @@ def create_pago(
 
     nuevo_total_pagado = total_pagado_previamente + data.valor_pagado
 
-    # 4. Determinar si el pago es TOTAL o PARCIAL
-    tipo_pago = "PARCIAL"
-    if nuevo_total_pagado >= total_facturado:
+    # 4. Resolver código de detalle y tipo de pago
+    # Buscamos el objeto del código para saber si es un descuento, crédito, etc.
+    codigo_obj = None
+    if data.id_codigo_detalle:
+        codigo_obj = db.query(models.CodigoDetalle).filter_by(id_codigo_detalle=data.id_codigo_detalle).first()
+    
+    if not codigo_obj:
+        # Fallback a MPAG (Medio de Pago General)
+        codigo_obj = db.query(models.CodigoDetalle).filter_by(codigo="MPAG").first()
+    
+    if not codigo_obj:
+        # Último recurso: cualquier código del grupo PAGO
+        codigo_obj = db.query(models.CodigoDetalle).filter(models.CodigoDetalle.grupo == "PAGO").first()
+    
+    if not codigo_obj:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Configuración incompleta: No existen códigos en el grupo PAGO (ej: MPAG, DESC, CRED)")
+
+    id_codigo = codigo_obj.id_codigo_detalle
+    str_codigo = codigo_obj.codigo
+
+    # Mapeo lógico de tipo_pago según el código contable
+    tipo_pago = "ANTICIPO"
+    if str_codigo == "DESC":
+        tipo_pago = "DESCUENTO"
+    elif str_codigo == "CRED":
+        tipo_pago = "CREDITO_FINANCIERO"
+    elif nuevo_total_pagado >= total_facturado:
         tipo_pago = "TOTAL"
+
+    # Actualizar estado del volante
+    if nuevo_total_pagado >= total_facturado:
         volante.estado = "PAGADO"
     else:
-        volante.estado = "GENERADO" # Mantenemos el estado generado hasta que se complete
+        volante.estado = "PARCIAL"
 
     # 5. Crear el registro del pago
     pago = models.Pago(
@@ -69,12 +96,6 @@ def create_pago(
     ).with_for_update().first()
 
     if cuenta:
-        # Resolver código de detalle
-        id_codigo = data.id_codigo_detalle
-        if not id_codigo:
-            codigo_mpag = db.query(models.CodigoDetalle).filter_by(codigo="MPAG").first()
-            if codigo_mpag: id_codigo = codigo_mpag.id_codigo_detalle
-
         max_sec = db.query(func.max(models.Movimiento.numero_secuencia)).filter(
             models.Movimiento.id_cuenta_corriente == cuenta.id_cuenta
         ).scalar() or 0

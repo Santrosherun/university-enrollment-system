@@ -197,6 +197,7 @@ export default function CobrosPage() {
             >
               <option value="">Todos los estados</option>
               <option value="GENERADO">Generado</option>
+              <option value="PARCIAL">Pago Parcial</option>
               <option value="PAGADO">Pagado</option>
               <option value="ANULADO">Anulado</option>
             </select>
@@ -240,14 +241,18 @@ export default function CobrosPage() {
                     <td className="py-3 pr-4 text-foreground">
                       {getPeriodoCode(item.id_periodo)}
                     </td>
-                    <td className="py-3 pr-4 font-semibold text-app-accent">
-                      {formatCurrency(item.total)}
+                    <td className="py-3 pr-4">
+                      <div className="font-semibold text-app-accent">{formatCurrency(item.total)}</div>
+                      {item.saldo_pendiente < item.total && item.saldo_pendiente > 0 && (
+                        <div className="text-[10px] font-bold text-amber-600">Restan: {formatCurrency(item.saldo_pendiente)}</div>
+                      )}
                     </td>
                     <td className="py-3 pr-4">
                       <span
                         className={[
                           "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold",
                           item.estado === "GENERADO" ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                          item.estado === "PARCIAL" ? "bg-blue-50 text-blue-700 border border-blue-100" :
                           item.estado === "PAGADO" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
                           "bg-zinc-100 text-zinc-600 border border-zinc-200"
                         ].join(" ")}

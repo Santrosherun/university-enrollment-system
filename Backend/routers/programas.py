@@ -37,7 +37,7 @@ def create_programa(
     current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db),
 ):
-    exists = db.query(models.ProgramaAcademico).filter(models.ProgramaAcademico.id_programa == data.codigo_programa).first()
+    exists = db.query(models.ProgramaAcademico).filter(models.ProgramaAcademico.codigo_programa == data.codigo_programa).first()
     if exists:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Codigo de programa ya existe")
 
@@ -48,7 +48,7 @@ def create_programa(
     return programa
 
 
-@router.put("/id", response_model=schemas.ProgramaOut)
+@router.put("/{id}", response_model=schemas.ProgramaOut)
 def update_programa(
     id: int,
     data: schemas.ProgramaUpdate,

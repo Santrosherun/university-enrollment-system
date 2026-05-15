@@ -56,7 +56,7 @@ export default function PagosPage() {
     setLoading(true);
     try {
       const [resCobros, resBalance] = await Promise.all([
-        fetch(`/api/cobros?estudianteId=${estId}&estado=GENERADO`),
+        fetch(`/api/cobros?estudianteId=${estId}&estado=GENERADO,PARCIAL`),
         fetch(`/api/estudiantes/${estId}/cuenta-corriente`)
       ]);
       
@@ -75,7 +75,7 @@ export default function PagosPage() {
 
       const estIdNum = Number(estId);
       setCobrosPendientes(
-        jsonCobros?.items?.filter(c => c.estado === "GENERADO" && Number(c.id_estudiante) === estIdNum) ?? []
+        jsonCobros?.items?.filter(c => (c.estado === "GENERADO" || c.estado === "PARCIAL") && Number(c.id_estudiante) === estIdNum) ?? []
       );
       setBalanceData(jsonBalance);
     } catch (err) {
@@ -103,7 +103,7 @@ export default function PagosPage() {
       ...prev,
       id_volante_matricula: id,
       id_codigo_detalle: prev.id_codigo_detalle || firstCode,
-      valor_pagado: cobro ? cobro.total : 0,
+      valor_pagado: cobro ? (cobro.saldo_pendiente ?? cobro.total) : 0,
     }));
   }
 
@@ -115,10 +115,10 @@ export default function PagosPage() {
     setMessage(null);
     try {
       const payloadBody = {
-        id_estudiante: Number(selectedEst),
-        ...formData,
         id_volante_matricula: Number(formData.id_volante_matricula),
         valor_pagado: Number(formData.valor_pagado),
+        referencia_pago: formData.referencia_pago,
+        canal_pago: formData.canal_pago,
         id_codigo_detalle: formData.id_codigo_detalle ? Number(formData.id_codigo_detalle) : null,
       };
 
@@ -195,7 +195,7 @@ export default function PagosPage() {
                         <div className="text-sm font-medium text-foreground">Volante {c.numero_volante}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold text-app-accent">{formatCurrency(c.total)}</div>
+                        <div className="text-sm font-bold text-app-accent">{formatCurrency(c.saldo_pendiente ?? c.total)}</div>
                         <div className="text-[10px] text-amber-600 font-medium italic">Pendiente</div>
                       </div>
                     </div>
@@ -203,7 +203,7 @@ export default function PagosPage() {
                   <div className="pt-2 border-t border-app-border mt-4 flex justify-between items-end">
                     <span className="text-xs font-semibold text-app-muted">TOTAL DEUDA ACUMULADA:</span>
                     <span className="text-xl font-black text-foreground">
-                      {formatCurrency(balanceData?.summary?.balance ?? balanceData?.balance ?? cobrosPendientes.reduce((acc, curr) => acc + curr.total, 0))}
+                      {formatCurrency(balanceData?.summary?.balance ?? balanceData?.balance ?? cobrosPendientes.reduce((acc, curr) => acc + Number(curr.saldo_pendiente ?? curr.total), 0))}
                     </span>
                   </div>
                 </div>
@@ -235,7 +235,7 @@ export default function PagosPage() {
                 <option value="">-- Selecciona el volante --</option>
                 {cobrosPendientes.map((c) => (
                   <option key={c.id_volante} value={c.id_volante}>
-                    {c.numero_volante} ({formatCurrency(c.total)})
+                    {c.numero_volante} ({formatCurrency(c.saldo_pendiente ?? c.total)})
                   </option>
                 ))}
               </select>
@@ -297,9 +297,9 @@ export default function PagosPage() {
                   className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-50"
                 >
                   <option value="TRANSFERENCIA">Transferencia</option>
-                  <option value="EFECTIVO">Efectivo</option>
+                  <option value="CAJA">Caja / Efectivo</option>
                   <option value="PSE">PSE / Online</option>
-                  <option value="CONVENIO">Corresponsal</option>
+                  <option value="TARJETA">Tarjeta</option>
                 </select>
               </div>
               <div className="space-y-1">

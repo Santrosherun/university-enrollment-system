@@ -25,24 +25,28 @@ export default function ReportesPage() {
   const [ingresoReal, setIngresoReal] = useState([]);
   const [creditosFinancieros, setCreditosFinancieros] = useState([]);
   
-  // Programas Académicos para el Reporte #3
+  // Programas y Periodos reales de la base de datos
   const [programas, setProgramas] = useState([]);
+  const [periodosList, setPeriodosList] = useState([]);
   const [selectedPrograma, setSelectedPrograma] = useState("");
 
   async function loadData() {
     setLoading(true);
     try {
-      // 1. Cargar KPI del dashboard y programas
-      const [resDash, resProg] = await Promise.all([
+      // 1. Cargar KPI del dashboard, programas y periodos
+      const [resDash, resProg, resPer] = await Promise.all([
         fetch(`/api/reportes/financieros?periodo=${periodo}`),
-        fetch("/api/programas")
+        fetch("/api/programas"),
+        fetch("/api/periodos")
       ]);
-      const [dataDash, dataProg] = await Promise.all([
+      const [dataDash, dataProg, dataPer] = await Promise.all([
         resDash.json().catch(() => null),
-        resProg.json().catch(() => null)
+        resProg.json().catch(() => null),
+        resPer.json().catch(() => null)
       ]);
       setDashboard(dataDash);
       setProgramas(dataProg?.items ?? []);
+      setPeriodosList(dataPer?.items ?? []);
 
       // 2. Cargar las 5 vistas nativas de BD mapeadas por backend
       const endpoints = [
@@ -129,9 +133,10 @@ export default function ReportesPage() {
               onChange={(e) => setPeriodo(e.target.value)}
               className="bg-transparent text-sm text-foreground font-semibold outline-none cursor-pointer"
             >
-              <option value="2024-1">2024-1</option>
-              <option value="2023-2">2023-2</option>
-              <option value="">Todos (Histórico)</option>
+              <option value="">-- Todos --</option>
+              {periodosList.map(p => (
+                <option key={p.id_periodo} value={p.codigo_periodo}>{p.codigo_periodo}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -348,10 +353,6 @@ export default function ReportesPage() {
                         {prog.nombre_programa}
                       </option>
                     ))}
-                    {/* Opciones de respaldo por si el array de programas está vacío */}
-                    <option value="Ingeniería de Sistemas">Ingeniería de Sistemas</option>
-                    <option value="Medicina">Medicina</option>
-                    <option value="Administración de Empresas">Administración de Empresas</option>
                   </select>
                 </div>
 

@@ -308,6 +308,8 @@ function ProgramaFormModal({ title, initial, onClose, onSave }) {
   const [codigo_programa, setCodigo] = useState(initial?.codigo_programa ?? "");
   const [nombre_programa, setNombre] = useState(initial?.nombre_programa ?? "");
   const [modalidad_programa, setModalidad] = useState(initial?.modalidad_programa ?? "PRESENCIAL");
+  const [duracion_semestres, setDuracion] = useState(initial?.duracion_semestres ?? 10);
+  const [nivel_formacion, setNivel] = useState(initial?.nivel_formacion ?? "PREGRADO");
   const [estado, setEstado] = useState(initial?.estado ?? "ACTIVO");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
@@ -317,7 +319,14 @@ function ProgramaFormModal({ title, initial, onClose, onSave }) {
     setStatus("loading");
     setError(null);
     try {
-      await onSave({ codigo_programa, nombre_programa, modalidad_programa, estado });
+      await onSave({
+        codigo_programa,
+        nombre_programa,
+        modalidad_programa,
+        duracion_semestres: Number(duracion_semestres),
+        nivel_formacion,
+        estado,
+      });
     } catch (err) {
       setError(err?.message ?? "No se pudo guardar.");
       setStatus("idle");
@@ -370,6 +379,35 @@ function ProgramaFormModal({ title, initial, onClose, onSave }) {
             placeholder="Ej: Ingeniería de Sistemas"
             required
           />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Duración (Semestres)</label>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              value={duracion_semestres}
+              onChange={(e) => setDuracion(e.target.value)}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Nivel de Formación</label>
+            <select
+              value={nivel_formacion}
+              onChange={(e) => setNivel(e.target.value)}
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20"
+              required
+            >
+              <option value="PREGRADO">Pregrado</option>
+              <option value="ESPECIALIZACION">Especialización</option>
+              <option value="MAESTRIA">Maestría</option>
+              <option value="DOCTORADO">Doctorado</option>
+            </select>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

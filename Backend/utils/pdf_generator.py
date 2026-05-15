@@ -188,9 +188,24 @@ def generate_volante_pdf(data: dict) -> bytes:
     
     html_content += f"""
                 <tr class="total-row">
-                    <td colspan="3" class="text-right" style="padding: 12px 10px;">TOTAL LIQUIDADO A PAGAR:</td>
+                    <td colspan="3" class="text-right" style="padding: 12px 10px;">TOTAL LIQUIDADO ORIGINAL:</td>
+                    <td class="text-right total-val" style="padding: 12px 10px; color: #555;">${data.get('total', 0):,.2f}</td>
+                </tr>
+                {f"""
+                <tr>
+                    <td colspan="3" class="text-right" style="padding: 8px 10px; color: #059669; font-weight: bold;">(-) ABONOS REALIZADOS A LA FECHA:</td>
+                    <td class="text-right" style="padding: 8px 10px; color: #059669; font-weight: bold;">-${data.get('pagado', 0):,.2f}</td>
+                </tr>
+                <tr class="total-row" style="background-color: #004a99 !important;">
+                    <td colspan="3" class="text-right" style="padding: 12px 10px; color: white;">SALDO NETO PENDIENTE DE PAGO:</td>
+                    <td class="text-right total-val" style="padding: 12px 10px; color: white; font-size: 15pt;">${data.get('saldo', 0):,.2f}</td>
+                </tr>
+                """ if data.get('pagado', 0) > 0 else f"""
+                <tr class="total-row">
+                    <td colspan="3" class="text-right" style="padding: 12px 10px;">TOTAL NETO A PAGAR:</td>
                     <td class="text-right total-val" style="padding: 12px 10px;">${data.get('total', 0):,.2f}</td>
                 </tr>
+                """}
             </tbody>
         </table>
 

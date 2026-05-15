@@ -24,10 +24,16 @@ export async function POST(request) {
   const body = await request.json().catch(() => null);
 
   if (!useMocks) {
-    return proxyToBackend("/programas/", "POST", body);
+    // Garantizar que los campos obligatorios para la validación Pydantic viajen siempre en la petición
+    const safeBody = {
+      ...body,
+      duracion_semestres: Number(body?.duracion_semestres || 10),
+      nivel_formacion: body?.nivel_formacion || "PREGRADO",
+    };
+    return proxyToBackend("/programas/", "POST", safeBody);
   }
 
-  const { codigo_programa, nombre_programa, modalidad_programa, estado } = body ?? {};
+  const { codigo_programa, nombre_programa, modalidad_programa, duracion_semestres, nivel_formacion, estado } = body ?? {};
 
   if (!codigo_programa || !nombre_programa || !modalidad_programa) {
     return Response.json(
@@ -36,6 +42,13 @@ export async function POST(request) {
     );
   }
 
-  const created = MockDb.createPrograma({ codigo_programa, nombre_programa, modalidad_programa, estado });
+  const created = MockDb.createPrograma({
+    codigo_programa,
+    nombre_programa,
+    modalidad_programa,
+    duracion_semestres: Number(duracion_semestres || 10),
+    nivel_formacion: nivel_formacion || "PREGRADO",
+    estado,
+  });
   return Response.json(created, { status: 201 });
 }
