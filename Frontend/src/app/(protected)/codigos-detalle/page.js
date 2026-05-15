@@ -118,7 +118,6 @@ export default function CodigosDetallePage() {
   }, []);
 
   async function save(form) {
-    // IMPORTANTE: Aseguramos que detectamos edición por el objeto editing actual
     const currentId = editing?.id_codigo_detalle;
     const isEdit = Boolean(currentId);
     
@@ -167,7 +166,7 @@ export default function CodigosDetallePage() {
       
       if (!res.ok && res.status !== 204) {
         const payload = await res.json().catch(() => null);
-        throw new Error(payload?.message ?? payload?.detail ?? "No tienes permisos suficientes o el código está en uso.");
+        throw new Error(payload?.message ?? payload?.detail ?? "No se puede eliminar este código porque ya tiene movimientos asociados.");
       }
       
       await load();
@@ -349,7 +348,7 @@ export default function CodigosDetallePage() {
               ¿Seguro que quieres eliminar el código{" "}
               <strong className="text-foreground">
                 {deleteTarget.codigo}
-              </strong>? Esta acción no se puede deshacer.
+              </strong>? Esta acción no se puede deshacer y fallará si ya existen transacciones vinculadas.
             </span>
           }
           confirmLabel="Sí, eliminar"

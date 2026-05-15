@@ -83,7 +83,6 @@ export default function ReglasCobroPage() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const filtered = useMemo(() => {
     let list = items;
@@ -155,21 +154,7 @@ export default function ReglasCobroPage() {
     setEditing(null);
   }
 
-  async function removeRegla(item) {
-    try {
-      const res = await fetch(`/api/reglas-cobro/${item.modalidad_cobro}/${item.id_periodo}/${item.id_programa}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        throw new Error(payload?.message ?? "Error al eliminar");
-      }
-      await loadData();
-      setDeleteTarget(null);
-    } catch (err) {
-      alert(err.message);
-    }
-  }
+
 
   const getProgName = (id) => programas.find((p) => String(p.id_programa) === String(id))?.nombre_programa ?? id;
   const getPeriodoCode = (id) => periodos.find((p) => String(p.id_periodo) === String(id))?.codigo_periodo ?? id;
@@ -294,13 +279,6 @@ export default function ReglasCobroPage() {
                         >
                           Editar
                         </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeleteTarget(item)}
-                        >
-                          Eliminar
-                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -332,19 +310,7 @@ export default function ReglasCobroPage() {
         />
       ) : null}
 
-      {deleteTarget ? (
-        <ConfirmModal
-          title="Eliminar regla"
-          description={
-            <span>
-              ¿Seguro que quieres eliminar esta regla de cobro? Los cobros ya generados con esta regla no se verán afectados.
-            </span>
-          }
-          confirmLabel="Sí, eliminar"
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={() => removeRegla(deleteTarget)}
-        />
-      ) : null}
+
     </div>
   );
 }

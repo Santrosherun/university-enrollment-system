@@ -107,7 +107,6 @@ export default function PeriodosPage() {
 
   async function save(form) {
     const isEdit = Boolean(editing?.id_periodo || editing?.codigo_periodo);
-    // Para simplificar, usamos el código como identificador unificado si no hay id numérico
     const idParam = editing?.id_periodo || editing?.codigo_periodo;
     const url = isEdit ? `/api/periodos/${idParam}` : "/api/periodos";
     const method = isEdit ? "PUT" : "POST";
@@ -145,14 +144,13 @@ export default function PeriodosPage() {
     const res = await fetch(`/api/periodos/${idParam}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) {
       const payload = await res.json().catch(() => null);
-      throw new Error(payload?.message ?? "No se pudo eliminar el periodo académico.");
+      throw new Error(payload?.message ?? "No se puede eliminar este periodo porque ya tiene registros académicos vinculados.");
     }
     await load();
   }
 
   return (
     <div className="space-y-7 pb-12">
-      {/* Encabezado */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
@@ -172,7 +170,6 @@ export default function PeriodosPage() {
         </Button>
       </div>
 
-      {/* Panel de Búsqueda y Grilla */}
       <div className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex-1 max-w-md">
@@ -277,7 +274,7 @@ export default function PeriodosPage() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td className="py-10 text-center text-xs text-app-muted" colSpan={7}>
-                      No se encontraron periodos académicos registrados. Utiliza el botón superior para crear el primero.
+                      No se encontraron periodos académicos registrados.
                     </td>
                   </tr>
                 ) : null}
@@ -287,7 +284,6 @@ export default function PeriodosPage() {
         )}
       </div>
 
-      {/* Modal de Formulario */}
       {open ? (
         <PeriodoFormModal
           title={editing ? "Editar Periodo Académico" : "Nuevo Periodo Académico"}
@@ -300,19 +296,17 @@ export default function PeriodosPage() {
         />
       ) : null}
 
-      {/* Confirmación de Eliminación */}
       {deleteTarget ? (
         <ConfirmModal
           title="Eliminar Periodo Académico"
           description={
             <span>
-              ¿Estás absolutamente seguro de eliminar el periodo{" "}
+              ¿Estás seguro de eliminar el periodo{" "}
               <strong className="text-foreground">{deleteTarget.codigo_periodo}</strong>? 
-              Ten en cuenta que si existen inscripciones o reglas de cobro vinculadas a este lapso temporal, 
-              la base de datos rechazará la operación por integridad referencial.
+              La operación fallará si ya existen inscripciones o reglas vinculadas.
             </span>
           }
-          confirmLabel="Sí, eliminar periodo"
+          confirmLabel="Sí, eliminar"
           onClose={() => setDeleteTarget(null)}
           onConfirm={() => removePeriodo(deleteTarget)}
         />
@@ -323,21 +317,16 @@ export default function PeriodosPage() {
 
 function PeriodoFormModal({ title, initial, onClose, onSave }) {
   const isEdit = Boolean(initial);
-  
-  // Valores iniciales calculados
   const currentYear = new Date().getFullYear();
   const [anio, setAnio] = useState(initial?.anio ?? currentYear);
   const [numero_periodo, setNumeroPeriodo] = useState(initial?.numero_periodo ?? 1);
   const [codigo_periodo, setCodigoPeriodo] = useState(initial?.codigo_periodo ?? `${currentYear}-1`);
-  
   const [fecha_inicio, setFechaInicio] = useState(initial?.fecha_inicio ?? `${currentYear}-01-15`);
   const [fecha_fin, setFechaFin] = useState(initial?.fecha_fin ?? `${currentYear}-06-30`);
   const [estado, setEstado] = useState(initial?.estado ?? "ACTIVO");
-  
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
 
-  // Actualizar automáticamente el código propuesto al cambiar año o número de periodo si es creación
   function handleAnioChange(val) {
     setAnio(val);
     if (!isEdit) setCodigoPeriodo(`${val}-${numero_periodo}`);
@@ -411,7 +400,6 @@ function PeriodoFormModal({ title, initial, onClose, onSave }) {
             placeholder="Ej: 2025-1"
             required
           />
-          {isEdit && <span className="text-[10px] text-amber-600">El código de periodo es inmutable tras su creación.</span>}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -444,8 +432,8 @@ function PeriodoFormModal({ title, initial, onClose, onSave }) {
             onChange={(e) => setEstado(e.target.value)}
             className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none focus:border-app-accent cursor-pointer"
           >
-            <option value="ACTIVO">ACTIVO (Permitir inscripciones y cobros)</option>
-            <option value="INACTIVO">INACTIVO (Cerrado / Bloqueado)</option>
+            <option value="ACTIVO">ACTIVO</option>
+            <option value="INACTIVO">INACTIVO</option>
           </select>
         </div>
 

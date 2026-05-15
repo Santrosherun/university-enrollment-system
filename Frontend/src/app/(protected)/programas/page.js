@@ -140,7 +140,7 @@ export default function ProgramasPage() {
     const res = await fetch(`/api/programas/${item.id_programa}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) {
       const payload = await res.json().catch(() => null);
-      throw new Error(payload?.message ?? "No se pudo eliminar el programa.");
+      throw new Error(payload?.message ?? "No se puede eliminar este programa porque tiene datos asociados (estudiantes o planes de estudio).");
     }
     await load();
   }
@@ -290,9 +290,7 @@ export default function ProgramasPage() {
               <strong className="text-foreground">
                 {deleteTarget.codigo_programa} — {deleteTarget.nombre_programa}
               </strong>
-              ? En modo demo también se borran los{" "}
-              <strong className="text-foreground">planes de estudio</strong>{" "}
-              vinculados a este programa.
+              ? Esta acción no se puede deshacer y fallará si existen estudiantes vinculados.
             </span>
           }
           confirmLabel="Sí, eliminar"

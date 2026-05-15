@@ -148,12 +148,11 @@ export default function EstudiantesPage() {
     setEditing(null);
   }
 
-
   async function removeEstudiante(item) {
     const res = await fetch(`/api/estudiantes/${item.id_estudiante}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) {
       const payload = await res.json().catch(() => null);
-      throw new Error(payload?.message ?? "No se pudo eliminar el estudiante.");
+      throw new Error(payload?.message ?? "No se puede eliminar este estudiante porque tiene registros académicos o financieros vinculados.");
     }
     await load();
   }
@@ -310,7 +309,7 @@ export default function EstudiantesPage() {
               <strong className="text-foreground">
                 {deleteTarget.primer_nombre} {deleteTarget.primer_apellido}
               </strong>
-              ? Esta acción borrará su historial académico en el sistema.
+              ? Esta acción fallará si el estudiante tiene una matrícula generada.
             </span>
           }
           confirmLabel="Sí, eliminar"
@@ -517,5 +516,3 @@ function EstudianteFormModal({ title, initial, programas, onClose, onSave }) {
     </Modal>
   );
 }
-
-

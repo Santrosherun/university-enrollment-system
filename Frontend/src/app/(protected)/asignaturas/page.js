@@ -97,7 +97,7 @@ export default function AsignaturasPage() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Error al eliminar");
+        throw new Error(errData.message || "Esta asignatura no puede ser eliminada porque está siendo usada en un plan de estudio.");
       }
       await loadData();
       setDeleteTarget(null);
@@ -297,7 +297,7 @@ function ConfirmDeleteModal({ item, onClose, onConfirm }) {
     <Modal title="Eliminar Asignatura" onClose={onClose}>
       <div className="space-y-4">
         <p className="text-sm text-app-muted">
-          ¿Estás seguro de que deseas eliminar la asignatura <strong className="text-foreground">{item.nombre_asignatura}</strong>? Esta acción no se puede deshacer y podría afectar los planes de estudio vigentes.
+          ¿Estás seguro de que deseas eliminar la asignatura <strong className="text-foreground">{item.nombre_asignatura}</strong>? Esta acción no se puede deshacer y fallará si la asignatura ya está vinculada a un plan de estudio.
         </p>
         <div className="flex justify-end gap-3 pt-4 border-t border-app-border">
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
