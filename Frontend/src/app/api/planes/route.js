@@ -52,3 +52,21 @@ export async function POST(request) {
   const created = MockDb.createPlanEstudio(body);
   return Response.json(created, { status: 201 });
 }
+export async function DELETE(request) {
+  const useMocks =
+    process.env.NEXT_PUBLIC_USE_MOCKS === "true" ||
+    process.env.NEXT_PUBLIC_USE_MOCKS === "1";
+
+  const { searchParams } = new URL(request.url);
+  const id_programa = searchParams.get("id_programa");
+  const id_asignatura = searchParams.get("id_asignatura");
+
+  if (!useMocks) {
+    if (!id_programa || !id_asignatura) {
+      return Response.json({ message: "ID Programa e ID Asignatura requeridos" }, { status: 400 });
+    }
+    return proxyToBackend(`/programas/${id_programa}/plan/${id_asignatura}`, "DELETE");
+  }
+
+  return Response.json({ message: "Eliminado (mock)" });
+}

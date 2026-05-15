@@ -138,7 +138,7 @@ def add_asignatura_plan(
     return plan
 
 
-@router.delete("{id}/plan/{id_asignatura}", status_code=201)
+@router.delete("/{id}/plan/{id_asignatura}", status_code=204)
 def remove_asignatura_from_plan(
         id: int,
         id_asignatura: int,

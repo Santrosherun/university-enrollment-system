@@ -116,6 +116,25 @@ export default function PlanesPage() {
     setEditing(null);
   }
 
+  async function handleDelete(item) {
+    if (!confirm(`¿Estás seguro de que deseas retirar la asignatura "${item.asignatura_nombre}" de este plan de estudio?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/planes?id_programa=${item.id_programa}&id_asignatura=${item.id_asignatura}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.message ?? "No se pudo retirar la asignatura.");
+      }
+      await loadPlanes(selectedProgramaId);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
 
   const totalCredits = useMemo(() => {
     return planes.reduce((acc, p) => acc + (p.creditos_plan || 0), 0);
@@ -228,9 +247,20 @@ export default function PlanesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => { setEditing(p); setOpen(true); }}
+                          onClick={() => {
+                            setEditing(p);
+                            setOpen(true);
+                          }}
                         >
                           Editar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDelete(p)}
+                        >
+                          Remover
                         </Button>
                       </div>
                     </td>
