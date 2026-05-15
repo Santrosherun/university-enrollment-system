@@ -62,7 +62,7 @@ def get_dashboard_summary(
     current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
-    # 1. Facturación (Ingreso Esperado)
+    # 1. Facturación Bruta (Ingreso Esperado)
     query_esperado = "SELECT COALESCE(SUM(ingreso_esperado_total), 0) FROM vista_ingreso_esperado"
     params = {}
     if periodo:
@@ -71,14 +71,34 @@ def get_dashboard_summary(
     
     total_esperado = db.execute(text(query_esperado), params).scalar() or 0
 
-    # 2. Recaudo (Ingreso Real)
-    query_real = "SELECT COALESCE(SUM(ingreso_real_recibido), 0) FROM vista_ingreso_real"
+    # 2. Recaudo REAL (Solo dinero efectivo/transferencia, NO descuentos)
+    # Filtramos por tipo_pago = 'TOTAL' o 'ANTICIPO' para asegurar que es flujo de caja
+    query_real_efectivo = """
+        SELECT COALESCE(SUM(p.valor_pagado), 0) 
+        FROM pago p
+        JOIN volante_matricula v ON p.id_volante_matricula = v.id_volante
+        JOIN periodo_academico per ON v.id_periodo = per.id_periodo
+        WHERE p.estado_pago = 'APROBADO' AND p.tipo_pago IN ('TOTAL', 'ANTICIPO')
+    """
     if periodo:
-        query_real += " WHERE codigo_periodo = :p"
+        query_real_efectivo += " AND per.codigo_periodo = :p"
     
-    total_real = db.execute(text(query_real), params).scalar() or 0
+    total_recaudo_efectivo = db.execute(text(query_real_efectivo), params).scalar() or 0
 
-    # 3. Datos para el gráfico por programa
+    # 3. Suma de Descuentos Aplicados
+    query_descuentos = """
+        SELECT COALESCE(SUM(p.valor_pagado), 0) 
+        FROM pago p
+        JOIN volante_matricula v ON p.id_volante_matricula = v.id_volante
+        JOIN periodo_academico per ON v.id_periodo = per.id_periodo
+        WHERE p.estado_pago = 'APROBADO' AND p.tipo_pago = 'DESCUENTO'
+    """
+    if periodo:
+        query_descuentos += " AND per.codigo_periodo = :p"
+    
+    total_descuentos = db.execute(text(query_descuentos), params).scalar() or 0
+
+    # 4. Datos para el gráfico por programa (usamos la vista existente)
     query_prog = "SELECT nombre_programa as nombre, ingreso_esperado_total as facturado FROM vista_ingreso_esperado"
     if periodo:
         query_prog += " WHERE codigo_periodo = :p"
@@ -86,22 +106,27 @@ def get_dashboard_summary(
     res_prog = db.execute(text(query_prog), params).all()
     por_programa = [dict(row._mapping) for row in res_prog]
 
-    # Indicadores
-    total_pendiente = float(total_esperado) - float(total_real)
-    efectividad = (float(total_real) / float(total_esperado) * 100) if total_esperado > 0 else 0
+    # Cálculo Final de Cartera
+    # Cartera = Facturación Bruta - (Pagos Efectivos + Descuentos)
+    total_pendiente = float(total_esperado) - (float(total_recaudo_efectivo) + float(total_descuentos))
+    
+    # Evitar negativos por decimales o ajustes menores
+    total_pendiente = max(0, total_pendiente)
+    
+    efectividad = (float(total_recaudo_efectivo) / (float(total_esperado) - float(total_descuentos)) * 100) if (float(total_esperado) - float(total_descuentos)) > 0 else 0
 
     return {
         "vista_facturacion": {
             "total_bruto": float(total_esperado),
-            "descuentos": 0,
-            "total_neto": float(total_esperado),
+            "descuentos": float(total_descuentos),
+            "total_neto": float(total_esperado) - float(total_descuentos),
             "por_programa": por_programa
         },
         "vista_ingreso_real": {
-            "total_recaudado": float(total_real),
+            "total_recaudado": float(total_recaudo_efectivo),
             "efectividad_porcentaje": efectividad
         },
         "vista_cartera": {
-            "total_pendiente": max(0, total_pendiente)
+            "total_pendiente": total_pendiente
         }
     }
