@@ -16,7 +16,7 @@ def send_tuition_email(to_email: str, student_name: str, volante_numero: str, pd
 
     try:
         params = {
-            "from": "luis@luisgvasquez.com", # Nota: En producción usar dominio verificado
+            "from": "noreply@luisgvasquez.com", # Nota: En producción usar dominio verificado
             "to": [to_email],
             "subject": f"Tu Volante de Matrícula {volante_numero} está listo",
             "html": f"""
