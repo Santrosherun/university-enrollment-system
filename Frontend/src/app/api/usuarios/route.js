@@ -15,8 +15,15 @@ export async function GET() {
     const mapped = (Array.isArray(data) ? data : []).map(u => ({
       id: u.id_usuario,
       nombre: `${u.primer_nombre} ${u.primer_apellido || ""}`.trim(),
-      email: u.username,
-      rol: u.nombre_rol === "ADMINISTRADOR" ? "ADMIN" : u.nombre_rol
+      email: u.correo_notificacion || u.username,
+      username: u.username,
+      rol: u.nombre_rol === "ADMINISTRADOR" ? "ADMIN" : u.nombre_rol,
+      nombre_rol: u.nombre_rol,
+      tipo_documento: u.tipo_documento,
+      numero_documento: u.numero_documento,
+      primer_nombre: u.primer_nombre,
+      primer_apellido: u.primer_apellido,
+      telefono_contacto: u.telefono_contacto
     }));
 
     return Response.json({ items: mapped });

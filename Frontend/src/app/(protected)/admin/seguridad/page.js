@@ -28,6 +28,24 @@ export default function SeguridadAdminPage() {
     }
   }
 
+  async function handleResendCredentials(user) {
+    if (!confirm(`¿Estás seguro de que quieres restablecer y enviar nuevas credenciales a ${user.nombre}? Se generará una nueva contraseña y se enviará a ${user.email}.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/usuarios/${user.id}/reset-password`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Error en el servidor al restablecer credenciales.");
+      
+      const data = await res.json();
+      alert(`✅ Contraseña restablecida con éxito.\n\nNueva Clave: ${data.new_password}\n\nSe ha enviado un correo de notificación a ${user.email} con las instrucciones de acceso.`);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   useEffect(() => {
     loadData();
   }, []);
@@ -81,9 +99,25 @@ export default function SeguridadAdminPage() {
                       </span>
                     </td>
                     <td className="py-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => { setEditingUser(user); setShowModal(true); }}>
-                        Editar
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleResendCredentials(user)}
+                        >
+                          ✉️ Enviar Credenciales
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingUser(user);
+                            setShowModal(true);
+                          }}
+                        >
+                          Editar
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -106,11 +140,11 @@ export default function SeguridadAdminPage() {
 
 function UserFormModal({ user, onClose, onSuccess }) {
   const [formData, setFormData] = useState(user ? {
-    primer_nombre: user.nombre.split(" ")[0] || "",
-    primer_apellido: user.nombre.split(" ").slice(1).join(" ") || "",
-    username: user.email.split("@")[0] || "", // Valor por defecto si es edición
-    email: user.email,
-    rol: user.rol === "ADMIN" ? "ADMINISTRADOR" : (user.rol || "ASISTENTE"),
+    primer_nombre: user.primer_nombre || "",
+    primer_apellido: user.primer_apellido || "",
+    username: user.username || "",
+    email: user.email || "",
+    rol: user.nombre_rol || "ASISTENTE",
     tipo_documento: user.tipo_documento || "CC",
     numero_documento: user.numero_documento || "",
     telefono_contacto: user.telefono_contacto || "",

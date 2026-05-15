@@ -16,7 +16,7 @@ def send_tuition_email(to_email: str, student_name: str, volante_numero: str, pd
 
     try:
         params = {
-            "from": "Administracion@proyectoshdf.com", # Nota: En producción usar dominio verificado
+            "from": "luis@luisgvasquez.com", # Nota: En producción usar dominio verificado
             "to": [to_email],
             "subject": f"Tu Volante de Matrícula {volante_numero} está listo",
             "html": f"""
@@ -82,4 +82,66 @@ def send_welcome_email(to_email: str, user_name: str, username: str, raw_passwor
         return True
     except Exception as e:
         print(f"❌ Error al enviar correo de bienvenida: {str(e)}")
+        return False
+
+def send_password_reset_email(to_email: str, user_name: str, username: str, new_password: str):
+    """
+    Envía un correo notificando que la contraseña ha sido restablecida por un administrador.
+    """
+    if not resend.api_key:
+        return False
+
+    try:
+        params = {
+            "from": "Universidad del Caribe Colombiano <onboarding@resend.dev>",
+            "to": [to_email],
+            "subject": "Seguridad: Tu contraseña ha sido restablecida",
+            "html": f"""
+                <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+                    <h2 style="color: #004a99;">Aviso de Seguridad</h2>
+                    <p>Hola, <strong>{user_name}</strong>.</p>
+                    <p>Te informamos que un administrador ha restablecido tu contraseña de acceso al sistema.</p>
+                    <div style="background: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>Usuario:</strong> {username}</p>
+                        <p style="margin: 5px 0;"><strong>Nueva Clave:</strong> <span style="color: #d32f2f; font-weight: bold;">{new_password}</span></p>
+                    </div>
+                    <p style="font-size: 12px; color: #666;">Por seguridad, te recomendamos cambiar esta contraseña al iniciar sesión.</p>
+                </div>
+            """,
+        }
+        resend.Emails.send(params)
+        return True
+    except Exception as e:
+        print(f"❌ Error al enviar correo de reset: {str(e)}")
+        return False
+
+def send_profile_update_email(to_email: str, user_name: str, username: str):
+    """
+    Notifica al usuario que su correo institucional ha sido actualizado.
+    """
+    if not resend.api_key:
+        return False
+
+    try:
+        params = {
+            "from": "Universidad del Caribe Colombiano <onboarding@resend.dev>",
+            "to": [to_email],
+            "subject": "Actualización de Perfil: Correo Institucional",
+            "html": f"""
+                <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+                    <h2 style="color: #004a99;">Perfil Actualizado</h2>
+                    <p>Hola, <strong>{user_name}</strong>.</p>
+                    <p>Te informamos que tu dirección de correo para notificaciones en el sistema ha sido actualizada a esta cuenta.</p>
+                    <div style="background: #f0f7ff; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #004a99;">
+                        <p style="margin: 5px 0;"><strong>Usuario:</strong> {username}</p>
+                        <p style="margin: 5px 0; font-size: 13px; color: #555;">(Tu contraseña de acceso se mantiene sin cambios)</p>
+                    </div>
+                    <p style="font-size: 12px; color: #666;">Si no solicitaste este cambio, por favor contacta al departamento de sistemas.</p>
+                </div>
+            """,
+        }
+        resend.Emails.send(params)
+        return True
+    except Exception as e:
+        print(f"❌ Error al enviar correo de actualización: {str(e)}")
         return False

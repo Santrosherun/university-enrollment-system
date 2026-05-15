@@ -97,9 +97,12 @@ def build_usuario_out(usuario: models.Usuario, db: Session):
         correo_notificacion = usuario.correo_notificacion,
         id_rol              = usuario.id_rol,
         nombre_rol          = usuario.rol.nombre_rol,
+        tipo_documento      = usuario.persona.tipo_documento,
+        numero_documento    = usuario.persona.numero_documento,
         primer_nombre       = usuario.persona.primer_nombre,
         primer_apellido     = usuario.persona.primer_apellido,
         correo_personal     = usuario.persona.correo_personal,
+        telefono_contacto   = usuario.persona.telefono_contacto,
         allowed_routes      = allowed_routes
     )
  

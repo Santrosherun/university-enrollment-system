@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.functions import user
-
+import secrets
+import string
 import database
 import models
 from routers import auth
 import schemas
+from utils.email_sender import send_password_reset_email, send_welcome_email, send_profile_update_email
 
 router = APIRouter(prefix="/users")
 
@@ -45,10 +46,13 @@ def get_user(
 def update_user(
         user_id: int,
         data: schemas.UserUpdate,
+        background_tasks: BackgroundTasks,
         current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR")),
         db: Session = Depends(database.get_db)
 ):
     user = get_user_by_id(user_id, db)
+    
+    old_email = user.correo_notificacion
     
     if data.primer_nombre: 
         user.persona.primer_nombre = data.primer_nombre
@@ -69,9 +73,9 @@ def update_user(
         user.persona.correo_personal = data.correo_personal
 
     if data.correo_notificacion:
-        exists = db.query(models.Usuario).filter(models.Usuario.correo_notificacion == data.correo_notificacion, models.Usuario.id_usuario != user.id_usuario)
+        exists = db.query(models.Usuario).filter(models.Usuario.correo_notificacion == data.correo_notificacion, models.Usuario.id_usuario != user.id_usuario).first()
         if exists:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "EL correo correo de notificacion ya existe")
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "El correo de notificación ya existe")
         user.correo_notificacion = data.correo_notificacion
 
     if data.telefono_contacto:
@@ -85,7 +89,48 @@ def update_user(
 
     db.commit()
     db.refresh(user)
+
+    # Si cambió el correo, notificar al nuevo correo
+    if data.correo_notificacion and data.correo_notificacion != old_email:
+        background_tasks.add_task(
+            send_profile_update_email,
+            to_email=user.correo_notificacion,
+            user_name=f"{user.persona.primer_nombre} {user.persona.primer_apellido}",
+            username=user.username
+        )
+
     return auth.build_usuario_out(user, db)
+
+
+@router.post("/{user_id}/reset-password")
+def reset_and_send_password(
+        user_id: int,
+        background_tasks: BackgroundTasks,
+        current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
+        db: Session = Depends(database.get_db)
+):
+    user = get_user_by_id(user_id, db)
+    
+    # Generar nueva clave aleatoria
+    alphabet = string.ascii_letters + string.digits
+    new_raw_password = ''.join(secrets.choice(alphabet) for i in range(10))
+    
+    user.password_hash = auth.hash_password(new_raw_password)
+    db.commit()
+    
+    # Enviar correo
+    background_tasks.add_task(
+        send_password_reset_email,
+        to_email=user.correo_notificacion,
+        user_name=f"{user.persona.primer_nombre} {user.persona.primer_apellido}",
+        username=user.username,
+        new_password=new_raw_password
+    )
+    
+    return {
+        "message": "Contraseña restablecida",
+        "new_password": new_raw_password
+    }
 
 
 @router.put("/{user_id}/password")

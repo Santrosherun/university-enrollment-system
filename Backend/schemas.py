@@ -48,9 +48,12 @@ class UsuarioOut(UsuarioBase):
     estado: str
     id_rol: int
     nombre_rol: str
+    tipo_documento: str
+    numero_documento: str
     primer_nombre: str
     primer_apellido: str
     correo_personal: str
+    telefono_contacto: Optional[str] = None
     allowed_routes: list[str] = []
 
     class Config:
