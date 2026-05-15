@@ -6,6 +6,9 @@ load_dotenv()
 
 resend.api_key = os.getenv("RESEND_API_KEY")
 
+# Configuración centralizada del remitente
+DEFAULT_FROM = "Universidad del Caribe Colombiano <noreply@luisgvasquez.com>"
+
 def send_tuition_email(to_email: str, student_name: str, volante_numero: str, pdf_content: bytes):
     """
     Envía un correo electrónico al estudiante con su volante de matrícula adjunto.
@@ -16,7 +19,7 @@ def send_tuition_email(to_email: str, student_name: str, volante_numero: str, pd
 
     try:
         params = {
-            "from": "noreply@luisgvasquez.com", # Nota: En producción usar dominio verificado
+            "from": DEFAULT_FROM,
             "to": [to_email],
             "subject": f"Tu Volante de Matrícula {volante_numero} está listo",
             "html": f"""
@@ -51,7 +54,7 @@ def send_welcome_email(to_email: str, user_name: str, username: str, raw_passwor
 
     try:
         params = {
-            "from": "Universidad del Caribe Colombiano <onboarding@resend.dev>",
+            "from": DEFAULT_FROM,
             "to": [to_email],
             "subject": "¡Bienvenido! Credenciales de Acceso al Sistema",
             "html": f"""
@@ -93,7 +96,7 @@ def send_password_reset_email(to_email: str, user_name: str, username: str, new_
 
     try:
         params = {
-            "from": "Universidad del Caribe Colombiano <onboarding@resend.dev>",
+            "from": DEFAULT_FROM,
             "to": [to_email],
             "subject": "Seguridad: Tu contraseña ha sido restablecida",
             "html": f"""
@@ -124,7 +127,7 @@ def send_profile_update_email(to_email: str, user_name: str, username: str):
 
     try:
         params = {
-            "from": "Universidad del Caribe Colombiano <onboarding@resend.dev>",
+            "from": DEFAULT_FROM,
             "to": [to_email],
             "subject": "Actualización de Perfil: Correo Institucional",
             "html": f"""
