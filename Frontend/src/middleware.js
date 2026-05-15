@@ -18,7 +18,7 @@ function isPublicPath(pathname) {
 
 const ROLE_RULES = [
   { prefix: "/admin", roles: ["ADMINISTRADOR"] },
-  { prefix: "/reportes", roles: ["ADMINISTRADOR"] },
+  { prefix: "/reportes", roles: ["ADMINISTRADOR", "SUPERVISOR"] },
   { prefix: "/programas", roles: ["ADMINISTRADOR", "SUPERVISOR"] },
   { prefix: "/planes", roles: ["ADMINISTRADOR", "SUPERVISOR"] },
   { prefix: "/estudiantes", roles: ["ADMINISTRADOR", "SUPERVISOR"] },
@@ -26,7 +26,7 @@ const ROLE_RULES = [
   { prefix: "/reglas-cobro", roles: ["ADMINISTRADOR", "SUPERVISOR"] },
   { prefix: "/cobros", roles: ["ADMINISTRADOR", "ASISTENTE"] },
   { prefix: "/cuenta-corriente", roles: ["ADMINISTRADOR", "ASISTENTE"] },
-  { prefix: "/pagos", roles: ["ADMINISTRADOR", "ASISTENTE"] },
+  { prefix: "/pagos", roles: ["ADMINISTRADOR", "SUPERVISOR", "ASISTENTE"] },
   { prefix: "/volante", roles: ["ADMINISTRADOR", "ASISTENTE"] },
 ];
 

@@ -10,6 +10,7 @@ router = APIRouter(prefix="/pagos")
 
 @router.get("/", response_model=list[schemas.PagoOut])
 def get_pagos(
+    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
     return db.query(models.Pago).all()

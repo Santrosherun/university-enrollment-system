@@ -27,7 +27,7 @@ def get_users(
     users = db.query(models.Usuario).all()
     response = []
     for i in users:
-        response.append(auth.build_usuario_out(i))
+        response.append(auth.build_usuario_out(i, db))
     return response
 
 
@@ -38,7 +38,7 @@ def get_user(
         db: Session = Depends(database.get_db)
 ):
     user = get_user_by_id(user_id, db)
-    return auth.build_usuario_out(user)
+    return auth.build_usuario_out(user, db)
 
 
 @router.put("/{user_id}", response_model=schemas.UsuarioOut)
@@ -85,7 +85,7 @@ def update_user(
 
     db.commit()
     db.refresh(user)
-    return auth.build_usuario_out(user)
+    return auth.build_usuario_out(user, db)
 
 
 @router.put("/{user_id}/password")

@@ -10,6 +10,7 @@ router = APIRouter(prefix="/reportes")
 
 @router.get("/balance-cuentas", response_model=list[schemas.BalanceCuentaOut])
 def get_balance_cuentas(
+    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
     result = db.execute(text("SELECT * FROM vista_balance_cuenta_corriente")).all()
@@ -17,6 +18,7 @@ def get_balance_cuentas(
 
 @router.get("/resumen-estudiantes", response_model=list[schemas.ResumenEstudianteOut])
 def get_resumen_estudiantes(
+    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
     result = db.execute(text("SELECT * FROM vista_resumen_estudiantes")).all()
@@ -24,6 +26,7 @@ def get_resumen_estudiantes(
 
 @router.get("/ingreso-esperado", response_model=list[schemas.IngresoEsperadoOut])
 def get_ingreso_esperado(
+    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
     result = db.execute(text("SELECT * FROM vista_ingreso_esperado")).all()
@@ -31,6 +34,7 @@ def get_ingreso_esperado(
 
 @router.get("/pendientes-pago", response_model=list[schemas.EstudiantePendienteOut])
 def get_pendientes_pago(
+    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
     result = db.execute(text("SELECT * FROM vista_estudiantes_pendientes_pago")).all()
@@ -38,6 +42,7 @@ def get_pendientes_pago(
 
 @router.get("/ingreso-real", response_model=list[schemas.IngresoRealOut])
 def get_ingreso_real(
+    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
     result = db.execute(text("SELECT * FROM vista_ingreso_real")).all()
@@ -45,6 +50,7 @@ def get_ingreso_real(
 
 @router.get("/creditos-financieros", response_model=list[schemas.CreditoFinancieroOut])
 def get_creditos_financieros(
+    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
     result = db.execute(text("SELECT * FROM vista_creditos_financieros")).all()
@@ -53,6 +59,7 @@ def get_creditos_financieros(
 @router.get("/dashboard")
 def get_dashboard_summary(
     periodo: str = "",
+    current_user: models.Usuario = Depends(auth.require_role("ADMINISTRADOR", "SUPERVISOR")),
     db: Session = Depends(database.get_db)
 ):
     # 1. Facturación (Ingreso Esperado)

@@ -60,22 +60,22 @@ export const NAV_ITEMS = [
   {
     label: "Pagos",
     href: "/pagos",
-    roles: [Roles.ADMINISTRADOR, Roles.ASISTENTE],
+    roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR, Roles.ASISTENTE],
   },
   {
     label: "Reportes",
     href: "/reportes",
-    roles: [Roles.ADMINISTRADOR],
+    roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
   },
   {
     label: "Usuarios / Roles / Menús",
     href: "/admin/seguridad",
-    roles: [Roles.ADMINISTRADOR],
+    roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
   },
   {
     label: "Matriz RBAC",
     href: "/permisos",
-    roles: [Roles.ADMINISTRADOR],
+    roles: [Roles.ADMINISTRADOR, Roles.SUPERVISOR],
   },
 ];
 
