@@ -299,15 +299,16 @@ function PeriodoFormModal({ title, initial, onClose, onSave }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1">
             <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Año Lectivo</label>
-            <input
-              type="number"
+            <select
               value={anio}
               onChange={(e) => handleAnioChange(e.target.value)}
-              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-bold"
-              min="2000"
-              max="2100"
+              className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-bold cursor-pointer"
               required
-            />
+            >
+              {Array.from({ length: 16 }, (_, i) => 2020 + i).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Número Semestre / Ciclo</label>
@@ -317,22 +318,18 @@ function PeriodoFormModal({ title, initial, onClose, onSave }) {
               className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 font-bold cursor-pointer"
             >
               <option value={1}>1 (Primer Semestre)</option>
-              <option value={2}>2 (Segundo Semestre)</option>
-              <option value={3}>3 (Intersemestral / Verano)</option>
+              <option value={2}>2 (Intersemestral / Verano)</option>
+              <option value={3}>3 (Segundo Semestre)</option>
             </select>
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Código del Periodo (Identificador)</label>
-          <input
-            value={codigo_periodo}
-            onChange={(e) => setCodigoPeriodo(e.target.value)}
-            disabled={isEdit}
-            className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 disabled:opacity-60 font-mono font-bold"
-            placeholder="Ej: 2025-1"
-            required
-          />
+          <label className="text-xs font-bold text-app-muted uppercase tracking-wider">Código del Periodo (Automático)</label>
+          <div className="w-full rounded-xl border border-dashed border-app-border bg-zinc-50/50 px-3 py-2.5 text-sm font-mono font-bold text-app-accent flex justify-between items-center">
+            <span>{codigo_periodo}</span>
+            <span className="text-[10px] font-black uppercase text-app-muted/50 tracking-tighter">ID Sistema</span>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
