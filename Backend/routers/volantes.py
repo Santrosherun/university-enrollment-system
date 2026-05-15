@@ -56,14 +56,16 @@ def create_volante(
     if not estudiante:
         raise HTTPException(404, "Estudiante no encontrado")
 
-    # 2. VALIDACIÓN DE DUPLICADOS: Evitar doble volante para el mismo periodo
-    existe = db.query(models.VolanteMatricula).filter(
-        models.VolanteMatricula.id_estudiante == data.id_estudiante,
-        models.VolanteMatricula.id_periodo == data.id_periodo,
-        models.VolanteMatricula.estado != "ANULADO"
-    ).first()
-    if existe:
-        raise HTTPException(400, f"El estudiante ya tiene un volante generado para este periodo ({existe.numero_volante})")
+    # 2. VALIDACIÓN DE DUPLICADOS: Solo para Matrícula (Global o Créditos)
+    if data.modalidad_cobro in ("GLOBAL", "CREDITOS"):
+        existe = db.query(models.VolanteMatricula).filter(
+            models.VolanteMatricula.id_estudiante == data.id_estudiante,
+            models.VolanteMatricula.id_periodo == data.id_periodo,
+            models.VolanteMatricula.modalidad_cobro.in_(["GLOBAL", "CREDITOS"]),
+            models.VolanteMatricula.estado != "ANULADO"
+        ).first()
+        if existe:
+            raise HTTPException(400, f"El estudiante ya tiene un volante de matrícula generado para este periodo ({existe.numero_volante})")
 
     # 3. Lógica de Cobro y Reglas
     valor_total = 0
@@ -85,31 +87,30 @@ def create_volante(
         else: # CREDITOS
             if getattr(data, 'creditos', None) is not None:
                 valor_total = data.creditos * regla.valor_credito
+                # Buscar inscripción para asociarla
                 insc = db.query(models.Inscripcion).filter(
                     models.Inscripcion.id_estudiante == data.id_estudiante,
                     models.Inscripcion.id_periodo_academico == data.id_periodo
                 ).first()
-                if insc:
-                    id_inscripcion = insc.id_inscripcion
+                if insc: id_inscripcion = insc.id_inscripcion
             else:
                 inscripcion = db.query(models.Inscripcion).filter(
                     models.Inscripcion.id_estudiante == data.id_estudiante,
                     models.Inscripcion.id_periodo_academico == data.id_periodo
                 ).first()
                 if not inscripcion:
-                    raise HTTPException(400, "Inscripción no encontrada para cobro por créditos. Seleccione las materias/créditos manualmente en el formulario.")
+                    raise HTTPException(400, "Inscripción no encontrada para cobro por créditos.")
                 
                 id_inscripcion = inscripcion.id_inscripcion
                 creditos = db.query(func.sum(models.Asignatura.creditos)).join(
                     models.Detalla, models.Detalla.id_asignatura == models.Asignatura.id_asignatura
                 ).filter(models.Detalla.id_inscripcion == inscripcion.id_inscripcion).scalar() or 0
-                
                 valor_total = creditos * regla.valor_credito
     else:
-        # Soporte para otros cobros (usar valor del payload si existe)
-        valor_total = getattr(data, 'valor', 0)
+        # OTROS COBROS
+        valor_total = data.valor if data.valor else 0
 
-    # 4. Obtener/Crear Cuenta Corriente con bloqueo temprano
+    # 4. Obtener/Crear Cuenta Corriente
     cuenta = db.query(models.CuentaCorriente).filter(
         models.CuentaCorriente.id_estudiante == data.id_estudiante,
         models.CuentaCorriente.id_periodo == data.id_periodo
@@ -119,12 +120,11 @@ def create_volante(
         cuenta = models.CuentaCorriente(id_estudiante=data.id_estudiante, id_periodo=data.id_periodo)
         db.add(cuenta)
         db.flush()
-        db.refresh(cuenta, with_for_update=True)
 
     # 5. Crear el volante
     nuevo_volante = models.VolanteMatricula(
         numero_volante = f"VOL-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        semestre_a_cursar = data.semestre_a_cursar,
+        semestre_a_cursar = data.semestre_a_cursar or 1,
         generacion_tipo = "INDIVIDUAL",
         modalidad_cobro = data.modalidad_cobro if data.modalidad_cobro in ("GLOBAL", "CREDITOS") else "GLOBAL",
         id_usuario = current_user.id_usuario,
@@ -136,14 +136,19 @@ def create_volante(
     db.add(nuevo_volante)
     db.flush()
 
-    # 6. Detalle (PMAT) - Esto dispara automáticamente el trigger de BD que inserta el movimiento
-    codigo_pmat = db.query(models.CodigoDetalle).filter(models.CodigoDetalle.codigo == "PMAT").first()
-    if not codigo_pmat:
-        raise HTTPException(500, "Código PMAT no configurado")
+    # 6. Determinar código de detalle (Concepto)
+    id_concepto = None
+    if data.id_codigo_detalle:
+        id_concepto = data.id_codigo_detalle
+    else:
+        codigo_pmat = db.query(models.CodigoDetalle).filter(models.CodigoDetalle.codigo == "PMAT").first()
+        if not codigo_pmat:
+            raise HTTPException(500, "Código de concepto por defecto (PMAT) no configurado")
+        id_concepto = codigo_pmat.id_codigo_detalle
 
     db.add(models.DetalleVolante(
         id_volante_matricula = nuevo_volante.id_volante,
-        id_codigo_detalle = codigo_pmat.id_codigo_detalle,
+        id_codigo_detalle = id_concepto,
         cantidad = 1,
         valor_unitario = valor_total
     ))

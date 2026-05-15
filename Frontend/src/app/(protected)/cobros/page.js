@@ -502,7 +502,7 @@ function GeneracionIndividualModal({ estudiantes, periodos, codigosDetalle, onCl
             </label>
             <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer font-medium">
               <input type="radio" checked={tipo === "OTRO"} onChange={() => setTipo("OTRO")} className="accent-app-accent" />
-              Otro Servicio / Derechos
+              Otro Servicio
             </label>
           </div>
         </div>
@@ -545,9 +545,13 @@ function GeneracionIndividualModal({ estudiantes, periodos, codigosDetalle, onCl
                  required
                >
                  <option value="">Selecciona concepto...</option>
-                 {codigosDetalle.filter(c => c.grupo === "COBRO" || c.tipo_codigo === "COBRO").map(c => (
-                    <option key={c.id_codigo_detalle} value={c.id_codigo_detalle}>{c.codigo || c.nombre_codigo} — {c.descripcion || c.nombre_codigo}</option>
-                 ))}
+                 {codigosDetalle
+                    .filter(c => (c.grupo === "COBRO" || c.tipo_codigo === "COBRO") && c.codigo !== "PMAT" && c.codigo !== "PCRE")
+                    .map(c => (
+                      <option key={c.id_codigo_detalle} value={c.id_codigo_detalle}>
+                        {c.codigo || c.nombre_codigo} — {c.descripcion || c.nombre_codigo}
+                      </option>
+                    ))}
                </select>
              </div>
           )}
