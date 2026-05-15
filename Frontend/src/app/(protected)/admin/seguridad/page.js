@@ -148,6 +148,7 @@ function UserFormModal({ user, onClose, onSuccess }) {
     tipo_documento: user.tipo_documento || "CC",
     numero_documento: user.numero_documento || "",
     telefono_contacto: user.telefono_contacto || "",
+    password: "",
   } : {
     primer_nombre: "",
     primer_apellido: "",
@@ -275,18 +276,19 @@ function UserFormModal({ user, onClose, onSuccess }) {
                   required
                 />
               </div>
-              {!user && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-app-muted uppercase">Contraseña Inicial</label>
-                  <input 
-                    type="password"
-                    value={formData.password}
-                    onChange={e => setFormData({...formData, password: e.target.value})}
-                    className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
-                    required
-                  />
-                </div>
-              )}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-app-muted uppercase">
+                  {user ? "Nueva Contraseña (dejar vacío para mantener)" : "Contraseña Inicial"}
+                </label>
+                <input 
+                  type="password"
+                  value={formData.password}
+                  onChange={e => setFormData({...formData, password: e.target.value})}
+                  placeholder={user ? "••••••••" : ""}
+                  className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-app-accent focus:ring-4 focus:ring-app-accent/10"
+                  required={!user}
+                />
+              </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-app-muted uppercase">Rol de Acceso</label>
                 <select 

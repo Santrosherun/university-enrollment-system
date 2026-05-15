@@ -87,6 +87,9 @@ def update_user(
             raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Rol '{data.nombre_rol}' no existe")
         user.id_rol = role.id_rol
 
+    if data.password:
+        user.password_hash = auth.hash_password(data.password)
+
     db.commit()
     db.refresh(user)
 

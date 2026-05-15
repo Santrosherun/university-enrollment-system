@@ -39,6 +39,7 @@ class UserUpdate(BaseModel):
     telefono_contacto: Optional[str] = None
     nombre_rol: Optional[str] = None
     estado: Optional[str] = None
+    password: Optional[str] = None
 
 class PasswordUpdate(BaseModel):
     new_password: str
