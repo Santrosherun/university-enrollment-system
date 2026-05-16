@@ -10,6 +10,8 @@ El sistema se encuentra desplegado y operativo en las siguientes plataformas:
 
 - **Backend (Railway)**: [university-enrollment-backend.railway.app](https://tu-api-en-railway.railway.app)
 
+- **Repositorio (GitHub)**: [github.com/Santrosherun/university-enrollment-system](https://github.com/Santrosherun/university-enrollment-system)
+
 ---
 
 ## 🚀 Tecnologías Utilizadas
