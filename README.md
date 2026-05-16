@@ -74,4 +74,4 @@ El sistema utiliza **WeasyPrint** para generar volantes en PDF. Esta librería r
 - **Asistente**: Gestión de estudiantes, inscripciones y recaudo de caja.
 
 ---
-© 2024 - University Enrollment System
+© 2026 - University Enrollment System
