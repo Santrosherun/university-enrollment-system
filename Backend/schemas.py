@@ -391,6 +391,7 @@ class ResumenEstudianteOut(BaseModel):
     modalidad_cobro: str
     monto_volante: Decimal
     estado_volante: str
+    numero_volante: Optional[str] = None
 
 class IngresoEsperadoOut(BaseModel):
     codigo_periodo: str
@@ -406,6 +407,7 @@ class EstudiantePendienteOut(BaseModel):
     monto_esperado: Decimal
     monto_pagado: Decimal
     saldo_pendiente: Decimal
+    numero_volante: Optional[str] = None
 
 class IngresoRealOut(BaseModel):
     codigo_periodo: str
