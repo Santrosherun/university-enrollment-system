@@ -288,6 +288,7 @@ class VolanteCreate(BaseModel):
     creditos: Optional[int] = None
     valor: Optional[Decimal] = None
     id_codigo_detalle: Optional[int] = None
+    asignaturas: Optional[list[int]] = None
 
 class VolanteMassCreate(BaseModel):
     id_programa: Optional[int] = None # Opcional: si es None, genera para todos

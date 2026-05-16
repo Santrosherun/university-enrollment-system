@@ -85,27 +85,41 @@ def create_volante(
         if data.modalidad_cobro == "GLOBAL":
             valor_total = regla.valor_global
         else: # CREDITOS
-            if getattr(data, 'creditos', None) is not None:
-                valor_total = data.creditos * regla.valor_credito
-                # Buscar inscripción para asociarla
-                insc = db.query(models.Inscripcion).filter(
-                    models.Inscripcion.id_estudiante == data.id_estudiante,
-                    models.Inscripcion.id_periodo_academico == data.id_periodo
-                ).first()
-                if insc: id_inscripcion = insc.id_inscripcion
+            # A. Obtener o Crear Inscripción Académica
+            inscripcion = db.query(models.Inscripcion).filter(
+                models.Inscripcion.id_estudiante == data.id_estudiante,
+                models.Inscripcion.id_periodo_academico == data.id_periodo
+            ).first()
+
+            if not inscripcion and data.asignaturas:
+                # Crear la inscripción si no existe y vienen materias
+                inscripcion = models.Inscripcion(
+                    id_estudiante=data.id_estudiante,
+                    id_periodo_academico=data.id_periodo
+                )
+                db.add(inscripcion)
+                db.flush()
+                # Registrar el detalle de materias
+                for asig_id in data.asignaturas:
+                    db.add(models.Detalla(id_inscripcion=inscripcion.id_inscripcion, id_asignatura=asig_id))
+                db.flush()
+            
+            if not inscripcion:
+                raise HTTPException(400, "No se encontró inscripción previa ni se enviaron materias para el cobro por créditos.")
+
+            id_inscripcion = inscripcion.id_inscripcion
+
+            # B. Calcular valor según créditos (Priorizar materias enviadas o inscritas)
+            if data.asignaturas:
+                creditos_totales = db.query(func.sum(models.Asignatura.creditos)).filter(
+                    models.Asignatura.id_asignatura.in_(data.asignaturas)
+                ).scalar() or 0
             else:
-                inscripcion = db.query(models.Inscripcion).filter(
-                    models.Inscripcion.id_estudiante == data.id_estudiante,
-                    models.Inscripcion.id_periodo_academico == data.id_periodo
-                ).first()
-                if not inscripcion:
-                    raise HTTPException(400, "Inscripción no encontrada para cobro por créditos.")
-                
-                id_inscripcion = inscripcion.id_inscripcion
-                creditos = db.query(func.sum(models.Asignatura.creditos)).join(
+                creditos_totales = db.query(func.sum(models.Asignatura.creditos)).join(
                     models.Detalla, models.Detalla.id_asignatura == models.Asignatura.id_asignatura
                 ).filter(models.Detalla.id_inscripcion == inscripcion.id_inscripcion).scalar() or 0
-                valor_total = creditos * regla.valor_credito
+            
+            valor_total = creditos_totales * regla.valor_credito
     else:
         # OTROS COBROS
         valor_total = data.valor if data.valor else 0
