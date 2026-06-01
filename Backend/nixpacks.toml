@@ -10,6 +10,7 @@ nixPkgs = [
     "freetype",
     "harfbuzz",
     "gobject-introspection",
+    "glib",
     "dejavu_fonts"
 ]
 
