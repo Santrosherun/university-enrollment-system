@@ -12,7 +12,9 @@ RUN apt-get update && apt-get install -y \
     fonts-dejavu-core \
     fontconfig \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0 /usr/lib/x86_64-linux-gnu/libgobject-2.0-0.so
+    && ln -s /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0 /usr/lib/x86_64-linux-gnu/libgobject-2.0-0.so \
+    && echo "/usr/lib/x86_64-linux-gnu" > /etc/ld.so.conf.d/weasyprint.conf \
+    && ldconfig
 
 WORKDIR /app
 
