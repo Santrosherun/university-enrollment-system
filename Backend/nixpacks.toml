@@ -23,5 +23,11 @@ cmds = [
 [phases.build]
 cmds = []
 
+[variables]
+LD_LIBRARY_PATH = "/root/.nix-profile/lib"
+GI_TYPELIB_PATH = "/root/.nix-profile/lib/girepository-1.0"
+XDG_DATA_DIRS = "/root/.nix-profile/share"
+FONTCONFIG_PATH = "/root/.nix-profile/etc/fonts"
+
 [start]
 cmd = ". /app/.venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port $PORT"
