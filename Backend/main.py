@@ -9,7 +9,8 @@ app  = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000",
-    "https://university-enrollment-system.vercel.app"],
+    "https://university-enrollment-system.vercel.app",
+    "https://ravishing-perception-production-14f7.up.railway.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
